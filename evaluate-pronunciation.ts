@@ -1,7 +1,7 @@
 // Supabase Edge Function: evaluate-pronunciation
 // Deploy: Supabase Dashboard → Edge Functions → New Function
 
-const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+const ANTHROPIC_KEY = Deno.env.get("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 ?? "";
 
 Deno.serve(async (req) => {
   // CORS
