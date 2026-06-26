@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aula — Bento English</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #2563C8;
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+/* HEADER */
+.header {
+  background: #1a4a9e;
+  padding: 16px 20px;
+  display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 10;
+}
+.back-btn {
+  background: rgba(255,255,255,0.15); border: none; color: #fff;
+  width: 36px; height: 36px; border-radius: 10px;
+  font-size: 20px; cursor: pointer; flex-shrink: 0;
+}
+.h-info { flex: 1; }
+.h-sub   { font-size: 11px; color: rgba(255,255,255,0.65); }
+.h-title { font-size: 16px; font-weight: 700; color: #fff; }
+.h-step  {
+  background: rgba(255,255,255,0.18); color: #fff;
+  font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+}
+
+/* PROGRESS */
+.prog-wrap { padding: 10px 20px 0; }
+.prog-track { height: 6px; background: rgba(255,255,255,0.25); border-radius: 99px; }
+.prog-fill  { height: 100%; background: #fff; border-radius: 99px; transition: width 0.4s; }
+
+/* CARD */
+.card {
+  background: #fff; border-radius: 16px;
+  margin: 14px 16px 0;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+.phase-label {
+  padding: 14px 18px 0;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: #2563C8;
+  display: flex; align-items: center; gap: 8px;
+}
+.phase-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.section { padding: 12px 18px 20px; }
+.pattern-tag {
+  display: inline-block; background: #ddeeff; color: #2563C8;
+  font-size: 13px; font-weight: 700; padding: 4px 12px;
+  border-radius: 20px; margin-bottom: 10px;
+}
+.instruction { font-size: 13px; color: #6b7280; margin-bottom: 14px; line-height: 1.5; }
+
+/* WORD LIST */
+.word-list { display: flex; flex-direction: column; gap: 8px; }
+
+.word-item {
+  border-radius: 12px; overflow: hidden;
+  border: 2px solid #e2e8f0; transition: border-color 0.15s;
+}
+.word-item.selected { border-color: #2563C8; }
+.word-item.done     { border-color: #16a34a; }
+
+.word-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; cursor: pointer;
+  background: #f0f4fb; transition: background 0.15s;
+}
+.word-item.selected .word-row { background: #ddeeff; }
+.word-item.done     .word-row { background: #dcfce7; }
+
+.word-text {
+  font-family: Georgia, serif; font-size: 20px;
+  font-weight: 700; color: #1a1a2e; flex: 1; letter-spacing: 0.5px;
+}
+.word-item.done .word-text { color: #16a34a; }
+.word-icon { font-size: 18px; }
+
+/* BOTÕES DE AÇÃO */
+.word-actions {
+  display: none; flex-direction: column; gap: 8px;
+  padding: 10px 12px 12px; background: #f8faff;
+}
+.word-item.selected .word-actions { display: flex; }
+
+.btn-row { display: flex; gap: 8px; }
+.act-btn {
+  flex: 1; padding: 11px 8px; border: none; border-radius: 10px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: inherit; display: flex; align-items: center;
+  justify-content: center; gap: 6px; transition: opacity 0.15s;
+}
+.act-btn:active { opacity: 0.7; }
+.btn-say   { background: #2563C8; color: #fff; }
+.btn-spell { background: #7c3aed; color: #fff; }
+.btn-rec   { background: #dc2626; color: #fff; width: 100%; }
+.btn-rec.recording { background: #991b1b; animation: pulse 1s infinite; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
+@keyframes spin  { to{transform:rotate(360deg)} }
+
+/* FEEDBACK */
+.feedback {
+  display: none; margin-top: 6px; padding: 10px 12px;
+  border-radius: 10px; font-size: 13px; line-height: 1.5;
+}
+.feedback.show    { display: block; }
+.feedback.correct { background: #dcfce7; color: #166534; border: 1.5px solid #16a34a; }
+.feedback.wrong   { background: #fee2e2; color: #991b1b; border: 1.5px solid #dc2626; }
+.feedback.info    { background: #eff6ff; color: #1e40af; border: 1.5px solid #93c5fd; }
+
+/* SENTENCES */
+.sent-list { display: flex; flex-direction: column; gap: 8px; }
+.sent-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: #f0f4fb; border: 2px solid #e2e8f0;
+  border-radius: 12px; padding: 12px 14px;
+  cursor: pointer; text-align: left; width: 100%;
+  font-family: inherit; transition: all 0.15s;
+}
+.sent-item.read { background: #dcfce7; border-color: #16a34a; }
+.sent-num  { font-size: 12px; font-weight: 700; color: #2563C8; min-width: 20px; padding-top: 2px; }
+.sent-item.read .sent-num { color: #16a34a; }
+.sent-text { font-family: Georgia, serif; font-size: 15px; line-height: 1.6; color: #1a1a2e; }
+.sent-chk  { margin-left: auto; font-size: 16px; opacity: 0; padding-top: 2px; }
+.sent-item.read .sent-chk { opacity: 1; }
+
+/* BOTTOM BTN */
+.divider    { height: 1px; background: #e2e8f0; margin: 0 18px 16px; }
+.btn-wrap   { padding: 0 18px 20px; }
+.main-btn {
+  width: 100%; padding: 16px; border: none; border-radius: 12px;
+  font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit;
+  background: #2563C8; color: #fff; transition: background 0.15s;
+}
+.main-btn:disabled { background: #e2e8f0; color: #9ca3af; cursor: not-allowed; }
+.main-btn.green    { background: #16a34a; }
+
+/* DONE */
+.done-wrap  { padding: 32px 24px; text-align: center; }
+.done-icon  { font-size: 56px; margin-bottom: 16px; }
+.done-title { font-size: 22px; font-weight: 800; color: #1a1a2e; margin-bottom: 8px; }
+.done-sub   { font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 24px; }
+.stats      { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
+.stat       { background: #f0f4fb; border-radius: 12px; padding: 12px 20px; text-align: center; }
+.stat-n     { font-size: 24px; font-weight: 800; color: #2563C8; }
+.stat-l     { font-size: 11px; color: #6b7280; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="back-btn" onclick="goBack()">‹</button>
+  <div class="h-info">
+    <div class="h-sub">Short Vowels</div>
+    <div class="h-title" id="hTitle">Carregando...</div>
+  </div>
+  <div class="h-step" id="hStep">1 / 2</div>
+</div>
+
+<div class="prog-wrap">
+  <div class="prog-track">
+    <div class="prog-fill" id="pFill" style="width:0%"></div>
+  </div>
+</div>
+
+<div class="card" id="card">
+  <div style="padding:48px 24px;text-align:center">
+    <div style="width:36px;height:36px;border:4px solid #e2e8f0;border-top-color:#2563C8;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px"></div>
+    <div style="font-size:14px;color:#6b7280">Preparando sua aula...</div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG — substitua com suas credenciais do Supabase ──
+const SUPABASE_FN_URL  = "https://SEU-PROJETO.supabase.co/functions/v1/evaluate-pronunciation";
+const SUPABASE_ANON    = "SUA-ANON-KEY";
+
+// ── LIÇÕES ───────────────────────────────────────────────
+const LESSONS = [
+  {
+    id: "short-a", sub: "a = /ă/",
+    words: ["cab","dab","jab","tab","dam","jam","yam","gap","lap","nap","tap","van","ban","pan","ran","cap","map","rat","bat","cat","fat","hat","mat","pat","sat"],
+    sentences: [
+      "The cab has a gap in the tan top.",
+      "Max had a nap on the flat mat.",
+      "The fat cat sat on the hat.",
+      "Pat the cat and tap the cap.",
+      "Ban the van from the dam road.",
+      "A rat ran and hid in the gap.",
+      "Dab the wax on the pan, Jan.",
+      "Tap the map and zap the cap.",
+    ]
+  },
+  {
+    id: "short-i", sub: "i = /ĭ/",
+    words: ["bid","hid","kid","lid","dig","fig","pig","wig","dim","dip","lip","rip","sip","tip","zip","bit","hit","sit","fin","bin","pin","win","big","jig","rim"],
+    sentences: [
+      "The kid hid the lid in the dim bin.",
+      "A big pig did a jig on the rim.",
+      "Did Kim sip from the tip of the jug?",
+      "Zip up and tip the bin, Jim.",
+      "Hit the pin in the pit with the kit.",
+      "Sit and fit the fin on the ship.",
+      "Rip the wig off the big pig.",
+      "Nip the fig at the tip of the stem.",
+    ]
+  },
+  {
+    id: "short-u", sub: "u = /ŭ/",
+    words: ["bud","mud","bug","dug","hug","jug","mug","pug","rug","tug","bun","fun","run","sun","cut","hut","nut","but","cup","pup","rub","tub","gum","sum","sub"],
+    sentences: [
+      "A pug in the mud got a big hug.",
+      "The bug dug under the sun-lit rug.",
+      "Run to the hut but do not cut the bun.",
+      "A nut fell in the mud by the hut.",
+      "Cut the bun and put the nut in the mug.",
+      "The pup ran from the tub to the cup.",
+      "Rub the gum off the cup, son.",
+      "Tug the rug out of the rut and have fun.",
+    ]
+  },
+  {
+    id: "short-e", sub: "e = /ĕ/",
+    words: ["bed","fed","led","red","keg","leg","peg","gem","den","hen","pen","ten","get","jet","let","met","net","pet","wet","bet","set","beg","bell","fell","sell"],
+    sentences: [
+      "The red hen sat on ten eggs in the den.",
+      "Get the wet pet to the vet, Ned.",
+      "Peg the hem on the bed, Beth.",
+      "Let the vet check the leg of the hen.",
+      "Set the pen on the red mat, Jen.",
+      "The bell fell off the red peg.",
+      "Bet on the jet — ten men led the way.",
+      "Yell and sell the gem at the keg fest.",
+    ]
+  },
+  {
+    id: "short-o", sub: "o = /ŏ/",
+    words: ["bob","cob","job","sob","cog","dog","fog","hog","jog","log","cot","dot","got","hot","lot","pot","fox","box","top","cop","hop","mop","pop","rod","nod"],
+    sentences: [
+      "The fox got hot on a log in the fog.",
+      "The dog can jog, not sob on the cot.",
+      "A hot pot on the cot can rot the top.",
+      "Bob the hog got a cob on the dot.",
+      "The cop got a box of cod on the dock.",
+      "Hop on top of the log, frog!",
+      "Pop the pod and nod at the rod.",
+      "Mop the hot top of the pot, Rob.",
+    ]
+  },
+];
+
+// ── ESTADO ───────────────────────────────────────────────
+const STORAGE_KEY = "bento_shortvowels";
+function getProgress() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+}
+function saveProgress(id) {
+  var p = getProgress();
+  p[id] = { done: true, at: Date.now() };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+}
+function pickLesson() {
+  var done = Object.keys(getProgress());
+  var remaining = LESSONS.filter(function(l){ return done.indexOf(l.id) === -1; });
+  var pool = remaining.length > 0 ? remaining : LESSONS;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+var lesson      = null;
+var phase       = "words";
+var wordsDone   = {};
+var sentsDone   = {};
+var selectedIdx = null;
+var recognition = null;
+
+// ── TTS ──────────────────────────────────────────────────
+function sayWord(word) {
+  window.speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(word);
+  u.lang = "en-US"; u.rate = 0.85;
+  window.speechSynthesis.speak(u);
+}
+
+function spellWord(word) {
+  window.speechSynthesis.cancel();
+  var letters = word.split("");
+  var i = 0;
+  function next() {
+    if (i >= letters.length) return;
+    var u = new SpeechSynthesisUtterance(letters[i]);
+    u.lang = "en-US"; u.rate = 0.8;
+    u.onend = function(){ i++; setTimeout(next, 250); };
+    window.speechSynthesis.speak(u);
+  }
+  next();
+}
+
+// ── GRAVAÇÃO ─────────────────────────────────────────────
+function recordWord(idx, btnEl) {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    showFeedback(idx, "info", "⚠️ Use o Chrome para gravar.");
+    return;
+  }
+  if (recognition) { recognition.stop(); return; }
+
+  btnEl.classList.add("recording");
+  btnEl.textContent = "⏹ Parar";
+  recognition = new SR();
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = function(e) {
+    var transcript = e.results[0][0].transcript.trim();
+    btnEl.classList.remove("recording");
+    btnEl.innerHTML = "🎙 Gravar";
+    recognition = null;
+    evaluate(idx, transcript);
+  };
+  recognition.onerror = function() {
+    btnEl.classList.remove("recording");
+    btnEl.innerHTML = "🎙 Gravar";
+    recognition = null;
+    showFeedback(idx, "info", "Não ouvi. Tente em lugar silencioso.");
+  };
+  recognition.onend = function() {
+    btnEl.classList.remove("recording");
+    btnEl.innerHTML = "🎙 Gravar";
+    recognition = null;
+  };
+  recognition.start();
+}
+
+async function evaluate(idx, transcript) {
+  var word = lesson.words[idx];
+  showFeedback(idx, "info", "⏳ Avaliando...");
+  try {
+    var res = await fetch(SUPABASE_FN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + SUPABASE_ANON
+      },
+      body: JSON.stringify({ word: word, transcript: transcript })
+    });
+    var data = await res.json();
+    if (data.correct) {
+      showFeedback(idx, "correct", "✓ " + data.feedback);
+      wordsDone[idx] = true;
+      renderWords();
+    } else {
+      showFeedback(idx, "wrong", "✗ " + data.feedback);
+    }
+  } catch(e) {
+    showFeedback(idx, "info", "Erro de conexão. Tente novamente.");
+  }
+}
+
+function showFeedback(idx, type, msg) {
+  var el = document.getElementById("fb" + idx);
+  if (!el) return;
+  el.className = "feedback show " + type;
+  el.textContent = msg;
+}
+
+// ── RENDER WORDS ─────────────────────────────────────────
+function renderWords() {
+  phase = "words";
+  document.getElementById("hTitle").textContent = lesson.sub;
+  document.getElementById("hStep").textContent  = "1 / 2";
+  var count  = Object.keys(wordsDone).length;
+  var total  = lesson.words.length;
+  var allDone = count === total;
+  document.getElementById("pFill").style.width = Math.round(count / total * 50) + "%";
+
+  var html = '<div class="phase-label"><div class="phase-dot" style="color:#2563C8"></div> Fase 1 — Palavras</div>';
+  html += '<div class="section">';
+  html += '<div class="pattern-tag">' + lesson.sub + '</div>';
+  html += '<p class="instruction">Toque em uma palavra. Ouça, soletre ou grave sua pronúncia.</p>';
+  html += '<div class="word-list">';
+
+  for (var i = 0; i < lesson.words.length; i++) {
+    var w    = lesson.words[i];
+    var done = wordsDone[i];
+    var sel  = selectedIdx === i && !done;
+    var cls  = done ? "done" : sel ? "selected" : "";
+    html += '<div class="word-item ' + cls + '" id="wi' + i + '">';
+    html += '<div class="word-row" onclick="selectWord(' + i + ')">';
+    html += '<span class="word-text">' + w + '</span>';
+    html += '<span class="word-icon">' + (done ? "✅" : sel ? "▾" : "○") + '</span>';
+    html += '</div>';
+    html += '<div class="word-actions">';
+    html += '<div class="btn-row">';
+    html += '<button class="act-btn btn-say"   onclick="sayWord(\'' + w + '\')">🔊 Dizer</button>';
+    html += '<button class="act-btn btn-spell" onclick="spellWord(\'' + w + '\')">🔤 Soletrar</button>';
+    html += '</div>';
+    html += '<button class="act-btn btn-rec" id="rec' + i + '" onclick="recordWord(' + i + ', this)">🎙 Gravar</button>';
+    html += '<div class="feedback" id="fb' + i + '"></div>';
+    html += '</div>';
+    html += '</div>';
+  }
+
+  html += '</div></div>';
+  html += '<div class="divider"></div>';
+  html += '<div class="btn-wrap">';
+  html += '<button class="main-btn" onclick="goSentences()" ' + (allDone ? "" : "disabled") + '>Avançar para Frases →</button>';
+  html += '</div>';
+
+  document.getElementById("card").innerHTML = html;
+}
+
+function selectWord(i) {
+  if (wordsDone[i]) return;
+  selectedIdx = selectedIdx === i ? null : i;
+  renderWords();
+  if (selectedIdx !== null) {
+    setTimeout(function(){
+      var el = document.getElementById("wi" + i);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+  }
+}
+
+// ── RENDER SENTENCES ─────────────────────────────────────
+function renderSentences() {
+  phase = "sentences";
+  document.getElementById("hStep").textContent = "2 / 2";
+  var count   = Object.keys(sentsDone).length;
+  var total   = lesson.sentences.length;
+  var allDone = count === total;
+  document.getElementById("pFill").style.width = (50 + Math.round(count / total * 50)) + "%";
+
+  var html = '<div class="phase-label"><div class="phase-dot" style="color:#7c3aed"></div> Fase 2 — Frases</div>';
+  html += '<div class="section">';
+  html += '<p class="instruction">Leia cada frase em voz alta. Toque para marcar como concluída.</p>';
+  html += '<div class="sent-list">';
+  for (var i = 0; i < lesson.sentences.length; i++) {
+    var cls = sentsDone[i] ? "read" : "";
+    html += '<button class="sent-item ' + cls + '" onclick="tapSent(' + i + ')">';
+    html += '<span class="sent-num">' + (i + 1) + '.</span>';
+    html += '<span class="sent-text">' + lesson.sentences[i] + '</span>';
+    html += '<span class="sent-chk">✓</span>';
+    html += '</button>';
+  }
+  html += '</div></div>';
+  html += '<div class="divider"></div>';
+  html += '<div class="btn-wrap">';
+  html += '<button class="main-btn green" onclick="complete()" ' + (allDone ? "" : "disabled") + '>✓ Concluir Aula</button>';
+  html += '</div>';
+
+  document.getElementById("card").innerHTML = html;
+}
+
+// ── DONE ─────────────────────────────────────────────────
+function renderDone() {
+  document.getElementById("pFill").style.width = "100%";
+  document.getElementById("hStep").textContent = "✓";
+  var totalDone = Object.keys(getProgress()).length;
+  var html = '<div class="done-wrap">';
+  html += '<div class="done-icon">🎉</div>';
+  html += '<div class="done-title">Aula concluída!</div>';
+  html += '<div class="done-sub">Você praticou <strong>' + lesson.words.length + ' palavras</strong> e <strong>' + lesson.sentences.length + ' frases</strong> com o padrão <strong>' + lesson.sub + '</strong>.</div>';
+  html += '<div class="stats">';
+  html += '<div class="stat"><div class="stat-n">' + lesson.words.length + '</div><div class="stat-l">Palavras</div></div>';
+  html += '<div class="stat"><div class="stat-n">' + lesson.sentences.length + '</div><div class="stat-l">Frases</div></div>';
+  html += '<div class="stat"><div class="stat-n">' + totalDone + '/5</div><div class="stat-l">Progresso</div></div>';
+  html += '</div>';
+  html += '<button class="main-btn green" style="margin-bottom:10px" onclick="goBack()">Voltar ao Dashboard</button>';
+  html += '<button class="main-btn" style="margin-top:8px" onclick="nextLesson()">Próxima Aula →</button>';
+  html += '</div>';
+  document.getElementById("card").innerHTML = html;
+}
+
+// ── AÇÕES ────────────────────────────────────────────────
+function tapSent(i) {
+  if (sentsDone[i]) delete sentsDone[i]; else sentsDone[i] = true;
+  renderSentences();
+}
+function goSentences() {
+  if (Object.keys(wordsDone).length === lesson.words.length) renderSentences();
+}
+function complete() {
+  if (Object.keys(sentsDone).length === lesson.sentences.length) {
+    saveProgress(lesson.id);
+    renderDone();
+  }
+}
+function nextLesson() {
+  wordsDone = {}; sentsDone = {}; selectedIdx = null;
+  lesson = pickLesson();
+  renderWords();
+}
+function goBack() { window.location.href = "index.html"; }
+
+// ── INIT ─────────────────────────────────────────────────
+lesson = pickLesson();
+renderWords();
+</script>
+</body>
+</html>
