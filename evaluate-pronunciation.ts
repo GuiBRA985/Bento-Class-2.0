@@ -1,10 +1,6 @@
-// Supabase Edge Function: evaluate-pronunciation
-// Deploy: Supabase Dashboard → Edge Functions → New Function
-
 const ANTHROPIC_KEY = Deno.env.get("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 ?? "";
 
 Deno.serve(async (req) => {
-  // CORS
   if (req.method === "OPTIONS") {
     return new Response(null, {
       headers: {
@@ -17,14 +13,14 @@ Deno.serve(async (req) => {
 
   try {
     var body = await req.json();
-    var word       = body.word ?? "";
+    var word = body.word ?? "";
     var transcript = body.transcript ?? "";
 
     if (!word || !transcript) {
       return Response.json({ error: "Faltando word ou transcript" }, { status: 400 });
     }
 
-    var prompt = "You are an English phonics teacher evaluating a student's pronunciation.\n\nTarget word: \"" + word + "\"\nStudent said: \"" + transcript + "\"\n\nEvaluate if the student pronounced the word correctly.\nConsider minor variations OK (e.g. 'cat' vs 'a cat').\nGive short encouraging feedback in Portuguese (max 1 sentence).\n\nRespond ONLY with JSON:\n{\"correct\": true or false, \"feedback\": \"texto em português\"}";
+    var prompt = "You are an English phonics teacher. Target word: \"" + word + "\". Student said: \"" + transcript + "\". Did they say the word correctly? Respond ONLY with this exact JSON, no markdown: {\"correct\": true, \"feedback\": \"Muito bem!\"}";
 
     var res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -41,8 +37,11 @@ Deno.serve(async (req) => {
     });
 
     var data = await res.json();
-    var raw  = data.content?.[0]?.text ?? "{}";
-    var result = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    var raw = data.content?.[0]?.text ?? "";
+    var match = raw.match(/\{[\s\S]*\}/);
+    var result = match
+      ? JSON.parse(match[0])
+      : { correct: false, feedback: "Não foi possível avaliar. Tente novamente." };
 
     return Response.json(result, {
       headers: { "Access-Control-Allow-Origin": "*" },
