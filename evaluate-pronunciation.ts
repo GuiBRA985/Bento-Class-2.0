@@ -1,4 +1,4 @@
-const ANTHROPIC_KEY = Deno.env.get("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 ?? "";
+const ANTHROPIC_KEY = Deno.env.get("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 || "";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -13,8 +13,8 @@ Deno.serve(async (req) => {
 
   try {
     var body = await req.json();
-    var word = body.word ?? "";
-    var transcript = body.transcript ?? "";
+    var word = body.word || "";
+    var transcript = body.transcript || "";
 
     if (!word || !transcript) {
       return Response.json({ error: "Faltando word ou transcript" }, { status: 400 });
@@ -37,19 +37,24 @@ Deno.serve(async (req) => {
     });
 
     var data = await res.json();
-    var raw = data.content?.[0]?.text ?? "";
+    var raw = data.content?.[0]?.text || "";
+    console.log("Claude raw response:", raw);
+
     var match = raw.match(/\{[\s\S]*\}/);
     var result = match
       ? JSON.parse(match[0])
-      : { correct: false, feedback: "Não foi possível avaliar. Tente novamente." };
+      : { correct: false, feedback: "Não foi possível avaliar." };
+
+    console.log("Result:", JSON.stringify(result));
 
     return Response.json(result, {
       headers: { "Access-Control-Allow-Origin": "*" },
     });
 
   } catch (e) {
+    console.log("Error:", e.message);
     return Response.json(
-      { error: e.message },
+      { correct: false, feedback: "Erro: " + e.message },
       { status: 500, headers: { "Access-Control-Allow-Origin": "*" } }
     );
   }
