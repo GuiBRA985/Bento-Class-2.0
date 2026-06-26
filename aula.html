@@ -355,15 +355,9 @@ async function evaluate(idx, transcript) {
       body: JSON.stringify({ word: word, transcript: transcript })
     });
     var data = await res.json();
-    if (data.correct) {
-      showFeedback(idx, "correct", "✓ " + data.feedback);
-      wordsDone[idx] = true;
-      renderWords();
-    } else {
-      showFeedback(idx, "wrong", "✗ " + data.feedback);
-    }
+    showFeedback(idx, "info", "Resposta: " + JSON.stringify(data));
   } catch(e) {
-    showFeedback(idx, "info", "Erro de conexão. Tente novamente.");
+    showFeedback(idx, "info", "Erro: " + e.message);
   }
 }
 
