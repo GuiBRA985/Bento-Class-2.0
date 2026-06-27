@@ -344,7 +344,7 @@ function recordWord(idx, btnEl) {
 
 async function evaluate(idx, transcript) {
   var word = lesson.words[idx];
-  showFeedback(idx, "info", "⏳ Avaliando...");
+  showFeedback(idx, "info", "⏳ Avaliando: " + word + " / " + transcript);
   try {
     var res = await fetch(SUPABASE_FN_URL, {
       method: "POST",
@@ -354,17 +354,10 @@ async function evaluate(idx, transcript) {
       },
       body: JSON.stringify({ word: word, transcript: transcript })
     });
-    var data = await res.json();
-    console.log("DATA:", JSON.stringify(data));
-    if (data.correct) {
-      showFeedback(idx, "correct", "✓ " + data.feedback);
-      wordsDone[idx] = true;
-      renderWords();
-    } else {
-      showFeedback(idx, "wrong", "✗ " + (data.feedback || JSON.stringify(data)));
-    }
+    var text = await res.text();
+    showFeedback(idx, "info", "Resposta: " + text);
   } catch(e) {
-    showFeedback(idx, "info", "Erro: " + e.message);
+    showFeedback(idx, "info", "Erro: " + e.name + " — " + e.message + " — URL: " + SUPABASE_FN_URL);
   }
 }
 
