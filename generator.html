@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phonics Lesson Generator — Bento English</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f8f7f2; min-height: 100vh; padding-bottom: 60px;
+}
+
+/* HEADER */
+.header {
+  background: #1a1a2e; padding: 14px 20px;
+  display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 10;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+.logo {
+  background: #e86a33; border-radius: 8px;
+  width: 34px; height: 34px; display: flex;
+  align-items: center; justify-content: center;
+  font-family: Georgia, serif; font-weight: 900;
+  font-size: 16px; color: #fff; flex-shrink: 0;
+}
+.header-info { flex: 1; }
+.header-title { font-size: 15px; font-weight: 800; color: #fff; }
+.header-sub   { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 1px; }
+.header-search {
+  background: rgba(255,255,255,0.1);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 8px; padding: 6px 12px;
+  color: #fff; font-size: 12px; font-family: inherit;
+  width: 150px; outline: none;
+}
+
+.content { max-width: 820px; margin: 0 auto; padding: 20px 16px; }
+
+/* GENERATOR BOX */
+.gen-box {
+  background: #fff; border: 2px solid #e86a33;
+  border-radius: 14px; padding: 18px 20px; margin-bottom: 24px;
+}
+.gen-title {
+  font-size: 14px; font-weight: 800; color: #1a1a2e;
+  margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+}
+.gen-sub { font-size: 12px; color: #6b7280; margin-bottom: 14px; }
+.gen-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.gen-select {
+  flex: 1; min-width: 140px; padding: 8px 12px;
+  border-radius: 8px; border: 1.5px solid #ddddd0;
+  font-size: 12px; font-family: inherit;
+  background: #f8f7f2; cursor: pointer; outline: none;
+}
+.gen-input {
+  flex: 1; padding: 8px 12px; border-radius: 8px;
+  border: 1.5px solid #ddddd0; font-size: 13px;
+  font-family: inherit; outline: none;
+}
+.gen-btn {
+  padding: 8px 18px; border-radius: 8px; border: none;
+  background: #e86a33; color: #fff; font-weight: 700;
+  font-size: 13px; cursor: pointer; white-space: nowrap;
+  font-family: inherit; transition: opacity 0.15s;
+}
+.gen-btn:disabled { background: #ddddd0; color: #9ca3af; cursor: not-allowed; }
+.gen-error { margin-top: 8px; color: #c0392b; font-size: 12px; }
+
+/* GROUP TABS */
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.tab {
+  padding: 5px 12px; border-radius: 18px;
+  border: 1.5px solid #ddddd0; background: #fff;
+  color: #6b7280; font-weight: 500; font-size: 11px;
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.tab.active { background: #e86a33; border-color: #e86a33; color: #fff; font-weight: 700; }
+
+.subtabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; padding-left: 4px; }
+.subtab {
+  padding: 4px 10px; border-radius: 14px;
+  border: 1.5px solid #ddddd0; background: #fafafa;
+  color: #6b7280; font-weight: 500; font-size: 11px;
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+}
+.subtab.active { background: #eef0ff; border-color: #3a3aaa; color: #3a3aaa; font-weight: 700; }
+
+/* LESSON CARDS */
+.lesson-card {
+  border: 1.5px solid #ddddd0; border-radius: 12px;
+  overflow: hidden; margin-bottom: 10px;
+  transition: box-shadow 0.2s;
+}
+.lesson-card.open { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+
+.lesson-header {
+  width: 100%; background: #f8f7f2; border: none;
+  padding: 13px 16px; display: flex; align-items: center;
+  gap: 10px; text-align: left; cursor: pointer;
+  transition: background 0.15s; font-family: inherit;
+}
+.lesson-card.open .lesson-header { background: var(--group-bg, #fde8d8); }
+
+.lesson-pattern {
+  font-family: Georgia, serif; font-weight: 700;
+  font-size: 18px; color: #e86a33; min-width: 28px;
+}
+.lesson-meta { flex: 1; }
+.lesson-name { font-weight: 700; font-size: 13px; color: #1a1a2e; }
+.lesson-count { font-size: 11px; color: #6b7280; margin-top: 1px; }
+.lesson-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 9px;
+  border-radius: 20px; text-transform: uppercase;
+  letter-spacing: 0.5px; white-space: nowrap;
+  background: var(--group-bg, #fde8d8);
+  color: var(--group-text, #7a3010);
+}
+.lesson-badge.ai { background: #e86a33; color: #fff; }
+.lesson-arrow { font-size: 12px; color: #6b7280; margin-left: 4px; }
+
+.lesson-body { padding: 16px 16px 20px; background: #fff; }
+.body-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: #6b7280; margin-bottom: 6px;
+}
+.breadcrumb {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 14px; flex-wrap: wrap;
+}
+.crumb {
+  font-size: 11px; font-weight: 700; padding: 2px 9px;
+  border-radius: 20px;
+}
+.crumb-group { background: var(--group-bg, #fde8d8); color: var(--group-text, #7a3010); }
+.crumb-sub   { background: #eef0ff; color: #3a3aaa; }
+
+/* WORD GRID */
+.word-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 7px; margin: 8px 0 16px;
+}
+.word-chip {
+  background: #fff; border: 1.5px solid #ddddd0;
+  border-radius: 8px; padding: 6px 4px;
+  text-align: center; font-family: Georgia, serif;
+  font-size: 14px; font-weight: 500; color: #1a1a2e;
+}
+.word-chip.match {
+  background: #fff0e8; border-color: #e86a33;
+  color: #e86a33; font-weight: 700;
+}
+
+/* SENTENCE LIST */
+.sent-list { list-style: none; }
+.sent-item {
+  display: flex; gap: 10px; padding: 7px 10px;
+  border-radius: 6px; margin-bottom: 2px;
+}
+.sent-item:nth-child(odd) { background: #f2f5ff; }
+.sent-num  { font-weight: 700; color: #e86a33; min-width: 22px; font-size: 12px; }
+.sent-text { font-family: Georgia, serif; font-size: 14px; line-height: 1.6; color: #1a1a2e; }
+
+.empty-msg { text-align: center; color: #6b7280; padding: 50px 20px; font-size: 14px; }
+.search-count { font-size: 11px; color: #6b7280; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">φ</div>
+  <div class="header-info">
+    <div class="header-title">Phonics Lesson Generator</div>
+    <div class="header-sub" id="lessonCount">— lessons</div>
+  </div>
+  <input class="header-search" type="text" placeholder="Search…" oninput="handleSearch(this.value)" id="searchInput">
+</div>
+
+<div class="content">
+
+  <!-- GENERATOR -->
+  <div class="gen-box">
+    <div class="gen-title">✦ Generate New Lesson with AI</div>
+    <div class="gen-sub">Creates 100% original words & sentences — saved to Supabase for reuse.</div>
+    <div class="gen-row">
+      <select class="gen-select" id="genGroup" onchange="handleGroupChange()"></select>
+      <select class="gen-select" id="genSub"></select>
+    </div>
+    <div class="gen-row">
+      <input class="gen-input" id="genPattern" placeholder='Pattern, e.g. "ou", "igh", "tion"…' onkeydown="if(event.key==='Enter') generate()">
+      <button class="gen-btn" id="genBtn" onclick="generate()">Generate ✦</button>
+    </div>
+    <div class="gen-error" id="genError"></div>
+  </div>
+
+  <!-- GROUP TABS -->
+  <div class="tabs" id="groupTabs"></div>
+  <div class="subtabs" id="subTabs"></div>
+
+  <div class="search-count" id="searchCount"></div>
+
+  <!-- LESSON LIST -->
+  <div id="lessonList"></div>
+
+</div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────
+var SUPABASE_URL  = "https://kqggtikhgzvzreiraosi.supabase.co";
+var SUPABASE_ANON = "SUA-ANON-KEY";
+var FN_GENERATE   = SUPABASE_URL + "/functions/v1/generate-lesson";
+
+// ── TAXONOMY ─────────────────────────────────────────────
+var TAXONOMY = [
+  { group: "Closed Syllables", subgroups: [
+    { sub: "Consonants" }, { sub: "Short Vowels" },
+    { sub: "Consonant Blends (front)" }, { sub: "Sight Words" },
+    { sub: "Consonant Blends (end)" }, { sub: "Consonant Blends (front and end)" }
+  ]},
+  { group: "More Closed Syllables", subgroups: [
+    { sub: "Sight Words" }, { sub: "Consonant Digraphs & Trigraphs" },
+    { sub: "Double Consonants at End" }, { sub: "qu and x" }, { sub: "ng and nk Patterns" }
+  ]},
+  { group: "Vowel Digraph Syllables", subgroups: [
+    { sub: "Sight Words" }, { sub: "ee = /ē/" }, { sub: "ea = /ē/" },
+    { sub: "oo (boot)" }, { sub: "ai = /ā/" }, { sub: "air" },
+    { sub: "ay = /ā/" }, { sub: "oa = /ō/" }, { sub: "ou (out)" },
+    { sub: "ow (cow)" }, { sub: "aw (saw)" }, { sub: "au (Paul)" },
+    { sub: "oy (boy)" }, { sub: "oi (oil)" }
+  ]},
+  { group: "Endings", subgroups: [
+    { sub: "Sight Words" }, { sub: "Silent e at end" }, { sub: "th = voiced" },
+    { sub: "s = /z/" }, { sub: "s endings" }, { sub: "es ending" },
+    { sub: "ed endings" }, { sub: "ing endings" }, { sub: "ful ending" },
+    { sub: "Apostrophe & n't" }
+  ]},
+  { group: "Multisyllable", subgroups: [
+    { sub: "Compound Words" }, { sub: "Multisyllable Words" },
+    { sub: "Reduced vowels" }, { sub: "al = /ul/" }, { sub: "er at end" },
+    { sub: "Consonant + le" }, { sub: "le syllable at end" }, { sub: "tle = /l/ at end" },
+    { sub: "y = /ee/ at end" }, { sub: "Sight Words in words" }
+  ]},
+  { group: "Soft C and G", subgroups: [
+    { sub: "c = /s/ before e" }, { sub: "c = /s/ before i or y" },
+    { sub: "g = /j/ before e" }, { sub: "age = /ij/" },
+    { sub: "dge = /j/ at end" }, { sub: "g = /j/ before i or y" }
+  ]},
+  { group: "Magic E Syllables", subgroups: [
+    { sub: "a = /ā/ (game)" }, { sub: "i = /ī/ (like)" },
+    { sub: "o = /ō/ (note)" }, { sub: "u = /yoo/ (use)" },
+    { sub: "u = /oo/ (tube)" }, { sub: "e = /ē/ (Pete)" }
+  ]},
+  { group: "Open Syllables", subgroups: [
+    { sub: "Sight Words" }, { sub: "a = /ā/ (basic)" },
+    { sub: "e = /ē/ (begin)" }, { sub: "i = /ī/ (item)" },
+    { sub: "o = /ō/ (bonus)" }, { sub: "u = /yoo/" },
+    { sub: "u = /oo/" }, { sub: "Split vowel pairs" }, { sub: "Split vowels i = /ē/" }
+  ]},
+  { group: "More Long Vowels", subgroups: [
+    { sub: "ie = /ē/ (chief)" }, { sub: "ei = /ē/ (seize)" },
+    { sub: "ey = /ē/ (key)" }, { sub: "y = /ī/ (fly)" },
+    { sub: "ie = /ī/ (pie)" }, { sub: "igh = /ī/ (sigh)" },
+    { sub: "ind (kind)" }, { sub: "oe = /ō/ (toe)" },
+    { sub: "ow = /ō/ (grow)" }, { sub: "ou = /ō/ (soul)" },
+    { sub: "old (gold)" }, { sub: "oll (roll)" }, { sub: "ol (bolt)" },
+    { sub: "ue = /oo/ (true)" }, { sub: "ue = /yoo/ (cue)" },
+    { sub: "ew = /oo/ (new)" }, { sub: "ew = /yoo/ (few)" },
+    { sub: "ui = /oo/ (fruit)" }, { sub: "ou = /oo/ (group)" },
+    { sub: "eigh = /ā/ (eight)" }, { sub: "ei = /ā/ (vein)" }, { sub: "ey = /ā/ (hey)" }
+  ]},
+  { group: "R-Controlled Syllables", subgroups: [
+    { sub: "ar" }, { sub: "er" }, { sub: "ir" }, { sub: "or" }, { sub: "ur" },
+    { sub: "ear = /er/ (earth)" }, { sub: "wor = /wer/ (word)" },
+    { sub: "war (warm)" }, { sub: "quar (quart)" }
+  ]},
+  { group: "More Short Vowels", subgroups: [
+    { sub: "all = /awl/ (tall)" }, { sub: "al = /awl/ (salt)" },
+    { sub: "alk = /awk/ (talk)" }, { sub: "a = /ŏ/ (wash)" },
+    { sub: "oo = short (good)" }, { sub: "u = short oo (put)" },
+    { sub: "ea = /ĕ/ (bread)" }, { sub: "ear = /air/ (bear)" },
+    { sub: "y = /ĭ/ (gym)" }, { sub: "ous = /us/ (famous)" },
+    { sub: "ou = /ŭ/ (touch)" }, { sub: "our = /ur/ (journey)" },
+    { sub: "o = /ŭ/ (son)" }
+  ]},
+  { group: "Silent Letters & Advanced", subgroups: [
+    { sub: "Sight Words" }, { sub: "sc = /s/ (scent)" },
+    { sub: "wr = /r/ (wrap)" }, { sub: "kn = /n/ (knee)" },
+    { sub: "gn = /n/ (gnaw)" }, { sub: "ign (sign)" },
+    { sub: "gh = silent (taught)" }, { sub: "ought = /awt/ (thought)" },
+    { sub: "Misc. silent letters" }, { sub: "ch = /k/ (school)" },
+    { sub: "ph = /f/ (phone)" }, { sub: "tion = /shun/ (action)" },
+    { sub: "sion = /shun/ (mansion)" }, { sub: "sion = /zhun/ (vision)" },
+    { sub: "ci = /sh/ (special)" }, { sub: "ti = /sh/ (patient)" },
+    { sub: "ture = /chur/ (picture)" }
+  ]}
+];
+
+var GROUP_COLORS = {
+  "Closed Syllables":         { bg: "#fde8d8", text: "#7a3010" },
+  "More Closed Syllables":    { bg: "#fdd8e8", text: "#7a1040" },
+  "Vowel Digraph Syllables":  { bg: "#d8eafd", text: "#103070" },
+  "Endings":                  { bg: "#d8fdea", text: "#105030" },
+  "Multisyllable":            { bg: "#ead8fd", text: "#401070" },
+  "Soft C and G":             { bg: "#fdfad8", text: "#504000" },
+  "Magic E Syllables":        { bg: "#fde8f8", text: "#601060" },
+  "Open Syllables":           { bg: "#d8f8fd", text: "#005060" },
+  "More Long Vowels":         { bg: "#e8d8fd", text: "#300870" },
+  "R-Controlled Syllables":   { bg: "#fdeed8", text: "#603000" },
+  "More Short Vowels":        { bg: "#d8fdfd", text: "#006060" },
+  "Silent Letters & Advanced":{ bg: "#f0f0f0", text: "#303030" }
+};
+
+// ── STATE ────────────────────────────────────────────────
+var lessons     = [];
+var activeGroup = "All";
+var activeSub   = "All";
+var searchTerm  = "";
+var openId      = null;
+
+// ── INIT ─────────────────────────────────────────────────
+function init() {
+  buildGroupSelect();
+  buildSubSelect();
+  buildTabs();
+  renderLessons();
+}
+
+// ── GENERATOR SELECTS ────────────────────────────────────
+function buildGroupSelect() {
+  var sel = document.getElementById("genGroup");
+  sel.innerHTML = TAXONOMY.map(function(t) {
+    return '<option value="' + t.group + '">' + t.group + '</option>';
+  }).join("");
+  buildSubSelect();
+}
+
+function handleGroupChange() {
+  buildSubSelect();
+}
+
+function buildSubSelect() {
+  var groupName = document.getElementById("genGroup").value;
+  var tax = TAXONOMY.find(function(t) { return t.group === groupName; });
+  var sel = document.getElementById("genSub");
+  sel.innerHTML = (tax ? tax.subgroups : []).map(function(s) {
+    return '<option value="' + s.sub + '">' + s.sub + '</option>';
+  }).join("");
+}
+
+// ── GENERATE ─────────────────────────────────────────────
+async function generate() {
+  var group   = document.getElementById("genGroup").value;
+  var sub     = document.getElementById("genSub").value;
+  var pattern = document.getElementById("genPattern").value.trim();
+  var btn     = document.getElementById("genBtn");
+  var errEl   = document.getElementById("genError");
+
+  if (!pattern) { errEl.textContent = "Please enter a phonetic pattern."; return; }
+  errEl.textContent = "";
+  btn.disabled = true; btn.textContent = "Generating…";
+
+  try {
+    var res = await fetch(FN_GENERATE, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + SUPABASE_ANON
+      },
+      body: JSON.stringify({ group_name: group, subgroup: sub, pattern: pattern })
+    });
+    var data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // Add to local list
+    var newLesson = {
+      id: data.id || Date.now(),
+      group: group,
+      sub: sub,
+      pattern: pattern,
+      words: data.words || [],
+      sentences: data.sentences || [],
+      isGenerated: true
+    };
+    lessons.unshift(newLesson);
+    document.getElementById("genPattern").value = "";
+    activeGroup = group; activeSub = "All";
+    buildTabs();
+    renderLessons();
+    openId = newLesson.id;
+    renderLessons();
+  } catch(e) {
+    errEl.textContent = "Error: " + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = "Generate ✦";
+  }
+}
+
+// ── TABS ─────────────────────────────────────────────────
+function buildTabs() {
+  var allGroups = ["All"].concat(TAXONOMY.map(function(t) { return t.group; })).concat(["Generated"]);
+  var tabsEl = document.getElementById("groupTabs");
+  tabsEl.innerHTML = allGroups.map(function(g) {
+    return '<button class="tab ' + (activeGroup === g ? "active" : "") + '" onclick="setGroup(\'' + g.replace(/'/g,"\\'") + '\')">' + g + '</button>';
+  }).join("");
+  buildSubTabs();
+}
+
+function buildSubTabs() {
+  var subTabsEl = document.getElementById("subTabs");
+  if (activeGroup === "All" || activeGroup === "Generated") {
+    subTabsEl.innerHTML = ""; return;
+  }
+  var tax = TAXONOMY.find(function(t) { return t.group === activeGroup; });
+  if (!tax) { subTabsEl.innerHTML = ""; return; }
+  var allSubs = ["All"].concat(tax.subgroups.map(function(s) { return s.sub; }));
+  subTabsEl.innerHTML = allSubs.map(function(s) {
+    return '<button class="subtab ' + (activeSub === s ? "active" : "") + '" onclick="setSub(\'' + s.replace(/'/g,"\\'") + '\')">' + s + '</button>';
+  }).join("");
+}
+
+function setGroup(g) { activeGroup = g; activeSub = "All"; buildTabs(); renderLessons(); }
+function setSub(s)   { activeSub = s; buildSubTabs(); renderLessons(); }
+
+// ── SEARCH ───────────────────────────────────────────────
+function handleSearch(val) { searchTerm = val.toLowerCase(); renderLessons(); }
+
+// ── FILTER ───────────────────────────────────────────────
+function getFiltered() {
+  return lessons.filter(function(l) {
+    var inGroup = activeGroup === "All"
+      || (activeGroup === "Generated" && l.isGenerated)
+      || l.group === activeGroup;
+    var inSub = activeSub === "All" || l.sub === activeSub;
+    var matches = !searchTerm
+      || l.pattern.toLowerCase().includes(searchTerm)
+      || l.sub.toLowerCase().includes(searchTerm)
+      || l.group.toLowerCase().includes(searchTerm)
+      || (l.words || []).some(function(w) { return w.toLowerCase().includes(searchTerm); });
+    return inGroup && inSub && matches;
+  });
+}
+
+// ── RENDER ───────────────────────────────────────────────
+function renderLessons() {
+  var filtered = getFiltered();
+  document.getElementById("lessonCount").textContent = lessons.length + " lessons · original content";
+
+  if (searchTerm) {
+    document.getElementById("searchCount").textContent = filtered.length + " result" + (filtered.length !== 1 ? "s" : "") + " for \"" + searchTerm + "\"";
+  } else {
+    document.getElementById("searchCount").textContent = "";
+  }
+
+  if (filtered.length === 0) {
+    document.getElementById("lessonList").innerHTML = '<div class="empty-msg">No lessons found.<br>Try generating one above!</div>';
+    return;
+  }
+
+  document.getElementById("lessonList").innerHTML = filtered.map(function(l) {
+    return renderCard(l);
+  }).join("");
+}
+
+function renderCard(l) {
+  var gc   = GROUP_COLORS[l.group] || { bg: "#eeeeee", text: "#333" };
+  var open = openId === l.id;
+  var pat  = (l.pattern || "").split(" ")[0] || "—";
+
+  var html = '<div class="lesson-card ' + (open ? "open" : "") + '" style="--group-bg:' + gc.bg + ';--group-text:' + gc.text + '">';
+
+  // Header button
+  html += '<button class="lesson-header" onclick="toggleCard(\'' + l.id + '\')">';
+  html += '<span class="lesson-pattern">' + pat + '</span>';
+  html += '<div class="lesson-meta">';
+  html += '<div class="lesson-name">' + (l.pattern || l.sub) + '</div>';
+  html += '<div class="lesson-count">' + (l.words||[]).length + ' words · ' + (l.sentences||[]).length + ' sentences</div>';
+  html += '</div>';
+  if (l.isGenerated) html += '<span class="lesson-badge ai">AI</span>';
+  html += '<span class="lesson-badge">' + l.group + '</span>';
+  html += '<span class="lesson-arrow">' + (open ? "▲" : "▼") + '</span>';
+  html += '</button>';
+
+  // Body
+  if (open) {
+    html += '<div class="lesson-body">';
+    html += '<div class="breadcrumb">';
+    html += '<span class="crumb crumb-group">' + l.group + '</span>';
+    html += '<span style="color:#6b7280;font-size:12px">›</span>';
+    html += '<span class="crumb crumb-sub">' + l.sub + '</span>';
+    html += '</div>';
+
+    html += '<div class="body-label">Word List</div>';
+    html += '<div class="word-grid">';
+    (l.words || []).forEach(function(w) {
+      var isMatch = searchTerm && w.toLowerCase().includes(searchTerm);
+      html += '<div class="word-chip ' + (isMatch ? "match" : "") + '">' + w + '</div>';
+    });
+    html += '</div>';
+
+    html += '<div class="body-label">Practice Sentences</div>';
+    html += '<ul class="sent-list">';
+    (l.sentences || []).forEach(function(s, i) {
+      html += '<li class="sent-item">';
+      html += '<span class="sent-num">' + (i+1) + '.</span>';
+      html += '<span class="sent-text">' + s + '</span>';
+      html += '</li>';
+    });
+    html += '</ul>';
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function toggleCard(id) {
+  openId = openId === id ? null : id;
+  renderLessons();
+}
+
+// ── START ────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
