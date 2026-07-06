@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bento English — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #2563C8;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+.header {
+  padding: 20px 20px 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-left h1 { font-size: 20px; font-weight: 800; color: #fff; }
+.header-left p  { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 3px; }
+.logout-btn {
+  background: rgba(255,255,255,0.15); border: none; color: #fff;
+  padding: 8px 14px; border-radius: 10px; font-size: 13px;
+  font-weight: 600; cursor: pointer; font-family: inherit;
+}
+
+.greeting {
+  margin: 16px 16px 0;
+  background: rgba(255,255,255,0.15);
+  border-radius: 16px; padding: 18px 20px; color: #fff;
+}
+.greeting h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.greeting p  { font-size: 13px; opacity: 0.85; line-height: 1.5; }
+
+.section { padding: 0 16px; margin-top: 16px; }
+.section-title {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.8px;
+  text-transform: uppercase; color: rgba(255,255,255,0.7);
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+
+.block-card {
+  background: #fff; border-radius: 16px;
+  padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+.block-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.8px;
+  text-transform: uppercase; color: #6b7280;
+  margin-bottom: 6px; display: flex; align-items: center; gap: 6px;
+}
+.block-name { font-size: 26px; font-weight: 800; color: #1a1a2e; margin-bottom: 14px; }
+.prog-track {
+  height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-bottom: 8px;
+}
+.prog-fill {
+  height: 100%; background: #2563C8; border-radius: 99px; transition: width 0.5s;
+}
+.prog-info { font-size: 13px; color: #6b7280; margin-bottom: 16px; }
+.prog-info strong { color: #1a1a2e; }
+.start-btn {
+  background: #2563C8; color: #fff;
+  border: none; border-radius: 12px;
+  padding: 14px 24px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; width: 100%;
+  transition: background 0.15s;
+}
+.start-btn:hover { background: #1a4a9e; }
+
+.stats-row { display: flex; gap: 10px; }
+.stat-box {
+  flex: 1; background: #fff; border-radius: 14px;
+  padding: 14px 12px; text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.stat-n { font-size: 24px; font-weight: 800; color: #2563C8; }
+.stat-l { font-size: 11px; color: #6b7280; margin-top: 2px; font-weight: 600; }
+
+.journey-card {
+  background: #fff; border-radius: 16px;
+  padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+.journey-title {
+  font-size: 15px; font-weight: 800; color: #1a1a2e;
+  margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+}
+.journey-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid #f1f5f9;
+}
+.journey-item:last-child { border-bottom: none; padding-bottom: 0; }
+.j-icon { font-size: 18px; flex-shrink: 0; }
+.j-info { flex: 1; }
+.j-name { font-size: 14px; font-weight: 600; color: #1a1a2e; }
+.j-sub  { font-size: 11px; color: #6b7280; margin-top: 1px; }
+.j-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 10px;
+  border-radius: 20px; background: #f1f5f9; color: #6b7280;
+}
+.j-badge.active { background: #ddeeff; color: #2563C8; }
+.j-badge.done   { background: #dcfce7; color: #16a34a; }
+
+.spinner {
+  width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.8s linear infinite; margin: 40px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Bento English</h1>
+    <p>Phonics Learning Platform</p>
+  </div>
+  <button class="logout-btn" onclick="logout()">Sign Out</button>
+</div>
+
+<div id="loadingState" style="text-align:center">
+  <div class="spinner"></div>
+</div>
+
+<div id="mainContent" style="display:none">
+  <div class="greeting">
+    <h2 id="greetingText">👋 Hello!</h2>
+    <p>One step a day is worth more than a thousand plans.</p>
+  </div>
+
+  <!-- CURRENT BLOCK -->
+  <div class="section" style="margin-top:20px">
+    <div class="section-title">📚 Current Block</div>
+    <div class="block-card">
+      <div class="block-label">🎯 In progress</div>
+      <div class="block-name">Short Vowels</div>
+      <div class="prog-track">
+        <div class="prog-fill" id="blockProgress" style="width:0%"></div>
+      </div>
+      <div class="prog-info" id="blockInfo">
+        <strong>0%</strong> · 0 lessons completed
+      </div>
+      <button class="start-btn" onclick="startLesson()">Enter Lesson</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="section" style="margin-top:16px">
+    <div class="section-title">📊 Your Stats</div>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-n" id="statLessons">0</div>
+        <div class="stat-l">Lessons</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-n" id="statScore">—</div>
+        <div class="stat-l">Avg Score</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-n" id="statWords">0</div>
+        <div class="stat-l">Words</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOURNEY -->
+  <div class="section" style="margin-top:16px">
+    <div class="section-title">🗺 Bento Journey</div>
+    <div class="journey-card">
+      <div class="journey-title">📚 Learning Blocks</div>
+      <div class="journey-item">
+        <div class="j-icon" id="icon0">🟡</div>
+        <div class="j-info">
+          <div class="j-name">Short Vowels</div>
+          <div class="j-sub">Closed syllables · phonics foundation</div>
+        </div>
+        <div class="j-badge active" id="badge0">Active</div>
+      </div>
+      <div class="journey-item">
+        <div class="j-icon">🔒</div>
+        <div class="j-info"><div class="j-name">Consonant Blends</div><div class="j-sub">Locked</div></div>
+        <div class="j-badge">Coming soon</div>
+      </div>
+      <div class="journey-item">
+        <div class="j-icon">🔒</div>
+        <div class="j-info"><div class="j-name">Digraphs</div><div class="j-sub">Locked</div></div>
+        <div class="j-badge">Coming soon</div>
+      </div>
+      <div class="journey-item">
+        <div class="j-icon">🔒</div>
+        <div class="j-info"><div class="j-name">Long Vowels</div><div class="j-sub">Locked</div></div>
+        <div class="j-badge">Coming soon</div>
+      </div>
+      <div class="journey-item">
+        <div class="j-icon">🔒</div>
+        <div class="j-info"><div class="j-name">Reading Fluency</div><div class="j-sub">Locked</div></div>
+        <div class="j-badge">Coming soon</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var SUPABASE_URL  = "https://kqggtikhgzvzreiraosi.supabase.co";
+var SUPABASE_ANON = "SUA-ANON-KEY";
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+var currentUser = null;
+
+async function init() {
+  var r = await sb.auth.getSession();
+  if (!r.data.session) { window.location.href = "login.html"; return; }
+  currentUser = r.data.session.user;
+
+  // Set greeting
+  var name = currentUser.user_metadata?.name || currentUser.email.split("@")[0];
+  document.getElementById("greetingText").textContent = "👋 Hello, " + name + "!";
+
+  // Load results
+  var results = await sb.from("lesson_results")
+    .select("*, lessons(group_name, subgroup)")
+    .eq("student_id", currentUser.id)
+    .order("completed_at", { ascending: false });
+
+  var data = results.data || [];
+  var total = data.length;
+  var avgScore = total > 0 ? Math.round(data.reduce(function(a,r){ return a+(r.score||0); },0)/total) : 0;
+  var totalWords = data.reduce(function(a,r){ return a+(r.words_total||0); },0);
+
+  // Short Vowels progress — subgroups: a, i, u, e, o = 5 total
+  var svDone = data.filter(function(r){ return r.lessons && r.lessons.group_name === "Closed Syllables" && r.lessons.subgroup && r.lessons.subgroup.startsWith("Short Vowels"); }).length;
+  var svTotal = 5;
+  var pct = Math.min(100, Math.round(svDone / svTotal * 100));
+
+  document.getElementById("blockProgress").style.width = pct + "%";
+  document.getElementById("blockInfo").innerHTML = "<strong>" + pct + "%</strong> · " + svDone + " / " + svTotal + " lessons completed";
+  document.getElementById("statLessons").textContent = total;
+  document.getElementById("statScore").textContent = avgScore || "—";
+  document.getElementById("statWords").textContent = totalWords;
+
+  if (svDone >= svTotal) {
+    document.getElementById("icon0").textContent = "✅";
+    document.getElementById("badge0").textContent = "Complete";
+    document.getElementById("badge0").className = "j-badge done";
+  }
+
+  document.getElementById("loadingState").style.display = "none";
+  document.getElementById("mainContent").style.display = "block";
+}
+
+function startLesson() {
+  window.location.href = "aula.html";
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  window.location.href = "login.html";
+}
+
+init();
+</script>
+</body>
+</html>
