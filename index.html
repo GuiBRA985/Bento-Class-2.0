@@ -202,7 +202,7 @@ body {
 
 <script>
 var SUPABASE_URL  = "https://kqggtikhgzvzreiraosi.supabase.co";
-var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxZ2d0aWtoZ3p2enJlaXJhb3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTE2ODEsImV4cCI6MjA5ODA4NzY4MX0.K7yVSDxf-uerPJeVjO4huJdEqVmR2Ty3jy1jyYMKk58";
+var SUPABASE_ANON = "SUA-ANON-KEY";
 var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 var currentUser = null;
 
@@ -211,8 +211,14 @@ async function init() {
   if (!r.data.session) { window.location.href = "login.html"; return; }
   currentUser = r.data.session.user;
 
+  // Check role - redirect teacher to professor.html
+  var studentRow = await sb.from("students").select("role, name").eq("id", currentUser.id).single();
+  if (studentRow.data && studentRow.data.role === "teacher") {
+    window.location.href = "professor.html"; return;
+  }
+
   // Set greeting
-  var name = currentUser.user_metadata?.name || currentUser.email.split("@")[0];
+  var name = (studentRow.data && studentRow.data.name) || currentUser.user_metadata?.name || currentUser.email.split("@")[0];
   document.getElementById("greetingText").textContent = "👋 Hello, " + name + "!";
 
   // Load results
