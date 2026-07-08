@@ -163,22 +163,79 @@ async function init() {
 }
 
 async function loadLesson() {
-  // Check for saved session first
   var sess = getSession();
 
-  // Load lesson from Supabase
-  var query = sb.from("lessons")
+  var r = await sb.from("lessons")
     .select("*")
-    .eq("group_name", "Closed Syllables")
-    .like("subgroup", "Short Vowels%");
+    .order("lesson_number", { ascending: true })
+    .limit(20);
 
-  var r = await query;
   var lessons = r.data || [];
 
   if (lessons.length === 0) {
-    document.getElementById("card").innerHTML = '<div style="padding:32px;text-align:center;color:#6b7280">No lessons available yet.</div>';
+    document.getElementById("card").innerHTML =
+      '<div style="padding:32px;text-align:center;color:#6b7280">No lessons available yet.</div>';
     return;
   }
+
+  var done = await sb.from("lesson_results")
+    .select("lesson_id")
+    .eq("student_id", currentUser.id);
+
+  var doneIds = (done.data || []).map(function(r){ return r.lesson_id; });
+
+  if (sess.lessonId) {
+    lesson = lessons.find(function(l){ return l.id === sess.lessonId; });
+  }
+
+  if (!lesson) {
+    var remaining = lessons.filter(function(l){ return doneIds.indexOf(l.id) === -1; });
+    var pool = remaining.length > 0 ? remaining : lessons;
+    lesson = pool[0];
+  }
+
+  var wordsRes = await sb.from("words")
+    .select("word")
+    .eq("lesson_id", lesson.id)
+    .order("word_order", { ascending: true });
+
+  var sentencesRes = await sb.from("sentences")
+    .select("sentence")
+    .eq("lesson_id", lesson.id)
+    .order("sentence_order", { ascending: true });
+
+  lesson.words = (wordsRes.data || []).map(function(w){ return w.word; });
+  lesson.sentences = (sentencesRes.data || []).map(function(s){ return s.sentence; });
+
+  lesson.group_name = lesson.category || lesson.group_name || "Bento Class";
+  lesson.subgroup = lesson.subcategory || lesson.phonics_group || lesson.title || "Lesson";
+  lesson.pattern = lesson.title || lesson.pattern || lesson.subgroup;
+
+  if (lesson.words.length === 0 || lesson.sentences.length === 0) {
+    document.getElementById("card").innerHTML =
+      '<div style="padding:32px;text-align:center;color:#6b7280">This lesson has no words or sentences yet.</div>';
+    return;
+  }
+
+  if (sess.lessonId === lesson.id) {
+    phase        = sess.phase        || "words";
+    wordsDone    = sess.wordsDone    || {};
+    sentsDone    = sess.sentsDone    || {};
+    hwApproved   = sess.hwApproved   || false;
+    ocrText      = sess.ocrText      || "";
+    selectedIdx  = sess.selectedIdx  || null;
+    wordsCorrect = sess.wordsCorrect || 0;
+    sentsCorrect = sess.sentsCorrect || 0;
+  }
+
+  document.getElementById("hSub").textContent = lesson.group_name;
+  document.getElementById("hTitle").textContent = lesson.pattern || lesson.subgroup;
+
+  if      (phase === "handwriting") renderHandwriting();
+  else if (phase === "sentences")   renderSentences();
+  else if (phase === "evaluation")  goEvaluation();
+  else                              renderWords();
+    }
 
   // Get completed lessons for this user
   var done = await sb.from("lesson_results")
