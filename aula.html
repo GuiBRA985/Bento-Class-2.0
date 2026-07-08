@@ -170,9 +170,8 @@ async function loadLesson() {
       '<div style="padding:32px;text-align:center;color:#6b7280">Buscando lições no Supabase...</div>';
 
     var r = await sb.from("lessons")
-      .select("*")
-      .eq("group_name", "Closed Syllables")
-      .like("subgroup", "Short Vowels%");
+  .select("*")
+  .limit(20);
 
     if (r.error) {
       document.getElementById("card").innerHTML =
