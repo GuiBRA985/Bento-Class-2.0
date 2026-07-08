@@ -142,18 +142,138 @@ var selectedIdx  = null;
 var recognition  = null;
 var wordsCorrect = 0;
 var sentsCorrect = 0;
+var currentSessionId = null;
 
 var SESSION_KEY = "bento_session";
 
-function getSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || {}; } catch { return {}; } }
-function saveSession() {
-  localStorage.setItem(SESSION_KEY, JSON.stringify({
-    lessonId: lesson.id, phase: phase, wordsDone: wordsDone,
-    sentsDone: sentsDone, hwApproved: hwApproved, ocrText: ocrText,
-    selectedIdx: selectedIdx, wordsCorrect: wordsCorrect, sentsCorrect: sentsCorrect
-  }));
+function getSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || {}; }
+  catch(e) { return {}; }
 }
-function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
+function sessionPayload(status) {
+  return {
+    student_id: currentUser ? currentUser.id : null,
+    lesson_id: lesson ? lesson.id : null,
+    status: status || "in_progress",
+    phase: phase,
+    words_done: wordsDone || {},
+    sents_done: sentsDone || {},
+    hw_approved: !!hwApproved,
+    ocr_text: ocrText || "",
+    selected_idx: selectedIdx,
+    words_correct: wordsCorrect || 0,
+    sents_correct: sentsCorrect || 0,
+    updated_at: new Date().toISOString()
+  };
+}
+
+async function saveSession() {
+  if (!lesson || !currentUser) return;
+
+  var localPayload = {
+    sessionId: currentSessionId,
+    lessonId: lesson.id,
+    phase: phase,
+    wordsDone: wordsDone,
+    sentsDone: sentsDone,
+    hwApproved: hwApproved,
+    ocrText: ocrText,
+    selectedIdx: selectedIdx,
+    wordsCorrect: wordsCorrect,
+    sentsCorrect: sentsCorrect
+  };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(localPayload));
+
+  if (!currentSessionId) return;
+  await sb.from("lesson_sessions")
+    .update(sessionPayload("in_progress"))
+    .eq("id", currentSessionId)
+    .eq("student_id", currentUser.id);
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+  currentSessionId = null;
+}
+
+function applySessionState(sess) {
+  if (!sess) return;
+  currentSessionId = sess.id || sess.sessionId || currentSessionId;
+  phase        = sess.phase || "words";
+  wordsDone    = sess.words_done || sess.wordsDone || {};
+  sentsDone    = sess.sents_done || sess.sentsDone || {};
+  hwApproved   = !!(sess.hw_approved || sess.hwApproved);
+  ocrText      = sess.ocr_text || sess.ocrText || "";
+  selectedIdx  = (sess.selected_idx !== undefined && sess.selected_idx !== null) ? sess.selected_idx : (sess.selectedIdx || null);
+  wordsCorrect = sess.words_correct || sess.wordsCorrect || 0;
+  sentsCorrect = sess.sents_correct || sess.sentsCorrect || 0;
+}
+
+async function getActiveDbSession() {
+  var r = await sb.from("lesson_sessions")
+    .select("*")
+    .eq("student_id", currentUser.id)
+    .eq("status", "in_progress")
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  if (r.error) return { error: r.error, data: null };
+  return { error: null, data: (r.data && r.data.length > 0) ? r.data[0] : null };
+}
+
+async function createDbSession(lessonId) {
+  var r = await sb.from("lesson_sessions")
+    .insert({
+      student_id: currentUser.id,
+      lesson_id: lessonId,
+      status: "in_progress",
+      phase: "words",
+      words_done: {},
+      sents_done: {},
+      hw_approved: false,
+      ocr_text: "",
+      selected_idx: null,
+      words_correct: 0,
+      sents_correct: 0
+    })
+    .select("id")
+    .single();
+
+  if (!r.error && r.data) currentSessionId = r.data.id;
+  return r;
+}
+
+function abandonButtonHtml() {
+  return '<button class="main-btn" style="background:#991b1b;margin-top:8px" onclick="abandonLesson()">Desistir da lição</button>';
+}
+
+async function abandonLesson() {
+  var ok = confirm("Deseja desistir desta lição? O professor verá essa desistência no painel.");
+  if (!ok) return;
+
+  if (currentSessionId) {
+    await sb.from("lesson_sessions")
+      .update({
+        status: "abandoned",
+        abandoned_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        phase: phase,
+        words_done: wordsDone || {},
+        sents_done: sentsDone || {},
+        hw_approved: !!hwApproved,
+        ocr_text: ocrText || "",
+        selected_idx: selectedIdx,
+        words_correct: wordsCorrect || 0,
+        sents_correct: sentsCorrect || 0
+      })
+      .eq("id", currentSessionId)
+      .eq("student_id", currentUser.id);
+  }
+
+  clearSession();
+  window.location.href = "index.html";
+}
 
 async function init() {
   var r = await sb.auth.getSession();
@@ -164,14 +284,36 @@ async function init() {
 
 async function loadLesson() {
   try {
-    var sess = getSession();
+    var localSess = getSession();
 
     document.getElementById("card").innerHTML =
       '<div style="padding:32px;text-align:center;color:#6b7280">Buscando lições no Supabase...</div>';
 
-    var r = await sb.from("lessons")
-  .select("*")
-  .limit(20);
+    var active = await getActiveDbSession();
+    if (active.error) {
+      document.getElementById("card").innerHTML =
+        '<div style="padding:32px;text-align:center;color:#991b1b">Erro ao buscar sessão ativa:<br><br>' +
+        active.error.message +
+        '</div>';
+      return;
+    }
+
+    var lessonIdToLoad = null;
+    var activeSession = active.data;
+
+    if (activeSession && activeSession.lesson_id) {
+      lessonIdToLoad = activeSession.lesson_id;
+      applySessionState(activeSession);
+    } else if (localSess.lessonId) {
+      lessonIdToLoad = localSess.lessonId;
+      applySessionState(localSess);
+    }
+
+    var lessonsQuery = sb.from("lessons").select("*");
+    if (lessonIdToLoad) lessonsQuery = lessonsQuery.eq("id", lessonIdToLoad).limit(1);
+    else lessonsQuery = lessonsQuery.limit(100);
+
+    var r = await lessonsQuery;
 
     if (r.error) {
       document.getElementById("card").innerHTML =
@@ -187,33 +329,39 @@ async function loadLesson() {
       document.getElementById("card").innerHTML =
         '<div style="padding:32px;text-align:center;color:#991b1b">' +
         'Nenhuma lição encontrada.<br><br>' +
-        'A tabela lessons está vazia ou o usuário não tem permissão de leitura.' +
+        'A tabela lessons está vazia, sem permissão de leitura, ou a sessão aponta para uma lição apagada.' +
         '</div>';
       return;
     }
 
-    var done = await sb.from("lesson_results")
-      .select("lesson_id")
-      .eq("student_id", currentUser.id);
+    if (lessonIdToLoad) {
+      lesson = lessons[0];
+    } else {
+      var done = await sb.from("lesson_results")
+        .select("lesson_id")
+        .eq("student_id", currentUser.id);
 
-    if (done.error) {
-      document.getElementById("card").innerHTML =
-        '<div style="padding:32px;text-align:center;color:#991b1b">Erro ao buscar progresso:<br><br>' +
-        done.error.message +
-        '</div>';
-      return;
-    }
+      if (done.error) {
+        document.getElementById("card").innerHTML =
+          '<div style="padding:32px;text-align:center;color:#991b1b">Erro ao buscar progresso:<br><br>' +
+          done.error.message +
+          '</div>';
+        return;
+      }
 
-    var doneIds = (done.data || []).map(function(r){ return r.lesson_id; });
-
-    if (sess.lessonId) {
-      lesson = lessons.find(function(l){ return l.id === sess.lessonId; });
-    }
-
-    if (!lesson) {
+      var doneIds = (done.data || []).map(function(r){ return r.lesson_id; });
       var remaining = lessons.filter(function(l){ return doneIds.indexOf(l.id) === -1; });
       var pool = remaining.length > 0 ? remaining : lessons;
       lesson = pool[Math.floor(Math.random() * pool.length)];
+
+      var created = await createDbSession(lesson.id);
+      if (created.error) {
+        document.getElementById("card").innerHTML =
+          '<div style="padding:32px;text-align:center;color:#991b1b">Erro ao criar sessão da lição:<br><br>' +
+          created.error.message +
+          '</div>';
+        return;
+      }
     }
 
     if (typeof lesson.words === "string") {
@@ -233,19 +381,10 @@ async function loadLesson() {
       return;
     }
 
-    if (sess.lessonId === lesson.id) {
-      phase        = sess.phase        || "words";
-      wordsDone    = sess.wordsDone    || {};
-      sentsDone    = sess.sentsDone    || {};
-      hwApproved   = sess.hwApproved   || false;
-      ocrText      = sess.ocrText      || "";
-      selectedIdx  = sess.selectedIdx  || null;
-      wordsCorrect = sess.wordsCorrect || 0;
-      sentsCorrect = sess.sentsCorrect || 0;
-    }
+    await saveSession();
 
-    document.getElementById("hSub").textContent = lesson.group_name;
-    document.getElementById("hTitle").textContent = lesson.pattern || lesson.subgroup;
+    document.getElementById("hSub").textContent = lesson.group_name || "Bento Class";
+    document.getElementById("hTitle").textContent = lesson.pattern || lesson.subgroup || "Lesson";
 
     if      (phase === "handwriting") renderHandwriting();
     else if (phase === "sentences")   renderSentences();
@@ -450,11 +589,11 @@ function renderWords() {
     if (sel) {
       html += '<div class="word-actions">';
       html += '<div class="btn-row">';
-      html += '<button class="act-btn btn-say" onclick="sayWord(\'' + w + '\')">🔊 Listen</button>';
-      html += '<button class="act-btn btn-spell" onclick="spellWord(\'' + w + '\')">🔤 Spell</button>';
+      html += '<button class="act-btn btn-say" onclick="sayWord(' + JSON.stringify(w).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + ')">🔊 Listen</button>';
+      html += '<button class="act-btn btn-spell" onclick="spellWord(' + JSON.stringify(w).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + ')">🔤 Spell</button>';
       html += '</div>';
       html += '<button class="act-btn btn-rec" id="rec' + i + '" onclick="recordItem(' + i + ', this, \'word\')">🎙 Record</button>';
-      html += '<button class="act-btn btn-def" onclick="defineWord(\''+w+'\', '+i+')">📖 Define</button>';
+      html += '<button class="act-btn btn-def" onclick="defineWord(' + JSON.stringify(w).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + ', '+i+')">📖 Define</button>';
       html += '<div class="def-box" id="def' + i + '"></div>';
       html += '<div class="feedback" id="fb' + i + '"></div>';
       html += '</div>';
@@ -462,7 +601,7 @@ function renderWords() {
     html += '</div>';
   }
   html += '</div></div><div class="divider"></div>';
-  html += '<div class="btn-wrap"><button class="main-btn" onclick="goHandwriting()" ' + (allDone ? "" : "disabled") + '>Next: Handwriting &#8594;</button></div>';
+  html += '<div class="btn-wrap"><button class="main-btn" onclick="goHandwriting()" ' + (allDone ? "" : "disabled") + '>Next: Handwriting &#8594;</button>' + abandonButtonHtml() + '</div>';
   document.getElementById("card").innerHTML = html;
 }
 
@@ -515,7 +654,7 @@ function renderHandwriting() {
     html += '<div class="feedback" id="hwFeedback"></div>';
   }
   html += '</div><div class="divider"></div>';
-  html += '<div class="btn-wrap"><button class="main-btn purple" onclick="goSentences()" ' + (hwApproved ? "" : "disabled") + '>Next: Read Aloud &#8594;</button></div>';
+  html += '<div class="btn-wrap"><button class="main-btn purple" onclick="goSentences()" ' + (hwApproved ? "" : "disabled") + '>Next: Read Aloud &#8594;</button>' + abandonButtonHtml() + '</div>';
   document.getElementById("card").innerHTML = html;
 }
 
@@ -605,7 +744,7 @@ function renderSentences() {
     html += '</div>';
   }
   html += '</div><div class="divider"></div>';
-  html += '<div class="btn-wrap"><button class="main-btn green" onclick="goEvaluation()" ' + (allDone ? "" : "disabled") + '>See Final Evaluation &#8594;</button></div>';
+  html += '<div class="btn-wrap"><button class="main-btn green" onclick="goEvaluation()" ' + (allDone ? "" : "disabled") + '>See Final Evaluation &#8594;</button>' + abandonButtonHtml() + '</div>';
   document.getElementById("card").innerHTML = html;
 }
 
@@ -661,6 +800,25 @@ async function saveResult(score) {
     sents_total:   lesson.sentences.length,
     ocr_text:      ocrText.substring(0, 500)
   });
+
+  if (currentSessionId) {
+    await sb.from("lesson_sessions")
+      .update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        phase: "evaluation",
+        words_done: wordsDone || {},
+        sents_done: sentsDone || {},
+        hw_approved: !!hwApproved,
+        ocr_text: ocrText || "",
+        selected_idx: selectedIdx,
+        words_correct: wordsCorrect || 0,
+        sents_correct: sentsCorrect || 0
+      })
+      .eq("id", currentSessionId)
+      .eq("student_id", currentUser.id);
+  }
 }
 
 function renderEvaluation(data) {
