@@ -187,9 +187,7 @@ async function loadLesson() {
       document.getElementById("card").innerHTML =
         '<div style="padding:32px;text-align:center;color:#991b1b">' +
         'Nenhuma lição encontrada.<br><br>' +
-        'Filtro usado:<br>' +
-        'group_name = Closed Syllables<br>' +
-        'subgroup começa com Short Vowels' +
+        'A tabela lessons está vazia ou o usuário não tem permissão de leitura.' +
         '</div>';
       return;
     }
@@ -218,7 +216,16 @@ async function loadLesson() {
       lesson = pool[Math.floor(Math.random() * pool.length)];
     }
 
-    if (!lesson.words || !lesson.sentences) {
+    if (typeof lesson.words === "string") {
+      try { lesson.words = JSON.parse(lesson.words); } catch(e) { lesson.words = []; }
+    }
+    if (typeof lesson.sentences === "string") {
+      try { lesson.sentences = JSON.parse(lesson.sentences); } catch(e) { lesson.sentences = []; }
+    }
+    if (!Array.isArray(lesson.words)) lesson.words = [];
+    if (!Array.isArray(lesson.sentences)) lesson.sentences = [];
+
+    if (lesson.words.length === 0 || lesson.sentences.length === 0) {
       document.getElementById("card").innerHTML =
         '<div style="padding:32px;text-align:center;color:#991b1b">' +
         'A lição foi encontrada, mas está sem words ou sentences.' +
@@ -309,7 +316,7 @@ async function defineWord(word, idx) {
     if (phonetic || audioUrl) {
       html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
       if (phonetic) html += '<div class="def-ipa">' + phonetic + '</div>';
-      if (audioUrl) html += '<button class="def-audio-btn" onclick="playAudio('' + audioUrl + '')">🔊 Native</button>';
+      if (audioUrl) html += '<button class="def-audio-btn" onclick="playAudio(' + JSON.stringify(audioUrl) + ')">🔊 Native</button>';
       html += '</div>';
     }
 
@@ -324,7 +331,9 @@ async function defineWord(word, idx) {
 }
 
 function playAudio(url) {
-  if (audioUrl) html += '<button class="def-audio-btn" onclick="playAudio(&quot;' + audioUrl + '&quot;)">🔊 Native</button>';
+  if (!url) return;
+  var audio = new Audio(url.startsWith("http") ? url : "https:" + url);
+  audio.play();
 }
 
 // ── TTS ─────────────────────────────────────────────────
