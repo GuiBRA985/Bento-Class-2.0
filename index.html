@@ -202,26 +202,33 @@ body {
 
 <script>
 var SUPABASE_URL  = "https://kqggtikhgzvzreiraosi.supabase.co";
-var SUPABASE_ANON = "SUA-ANON-KEY";
+var SUPABASE_ANON = "COLE-AQUI-A-MESMA-ANON-KEY-DO-LOGIN-HTML";
+var PROFESSOR_EMAIL = "gui@bento.host";
+
 var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 var currentUser = null;
 
 async function init() {
   var r = await sb.auth.getSession();
   if (!r.data.session) { window.location.href = "login.html"; return; }
+
   currentUser = r.data.session.user;
 
-  // Check role - redirect teacher to professor.html
-  var studentRow = await sb.from("students").select("role, name").eq("id", currentUser.id).single();
-  if (studentRow.data && studentRow.data.role === "teacher") {
-    window.location.href = "professor.html"; return;
+  if (String(currentUser.email).toLowerCase() === PROFESSOR_EMAIL) {
+    window.location.href = "professor.html";
+    return;
   }
 
-  // Set greeting
+  var studentRow = await sb.from("students").select("role, name").eq("id", currentUser.id).single();
+
+  if (studentRow.data && studentRow.data.role === "teacher") {
+    window.location.href = "professor.html";
+    return;
+  }
+
   var name = (studentRow.data && studentRow.data.name) || currentUser.user_metadata?.name || currentUser.email.split("@")[0];
   document.getElementById("greetingText").textContent = "👋 Hello, " + name + "!";
 
-  // Load results
   var results = await sb.from("lesson_results")
     .select("*, lessons(group_name, subgroup)")
     .eq("student_id", currentUser.id)
@@ -232,8 +239,13 @@ async function init() {
   var avgScore = total > 0 ? Math.round(data.reduce(function(a,r){ return a+(r.score||0); },0)/total) : 0;
   var totalWords = data.reduce(function(a,r){ return a+(r.words_total||0); },0);
 
-  // Short Vowels progress — subgroups: a, i, u, e, o = 5 total
-  var svDone = data.filter(function(r){ return r.lessons && r.lessons.group_name === "Closed Syllables" && r.lessons.subgroup && r.lessons.subgroup.startsWith("Short Vowels"); }).length;
+  var svDone = data.filter(function(r){
+    return r.lessons &&
+      r.lessons.group_name === "Closed Syllables" &&
+      r.lessons.subgroup &&
+      r.lessons.subgroup.startsWith("Short Vowels");
+  }).length;
+
   var svTotal = 5;
   var pct = Math.min(100, Math.round(svDone / svTotal * 100));
 
@@ -264,5 +276,3 @@ async function logout() {
 
 init();
 </script>
-</body>
-</html>
