@@ -324,9 +324,7 @@ async function defineWord(word, idx) {
 }
 
 function playAudio(url) {
-  if (!url) return;
-  var audio = new Audio(url.startsWith("http") ? url : "https:" + url);
-  audio.play();
+  if (audioUrl) html += '<button class="def-audio-btn" onclick="playAudio(&quot;' + audioUrl + '&quot;)">🔊 Native</button>';
 }
 
 // ── TTS ─────────────────────────────────────────────────
