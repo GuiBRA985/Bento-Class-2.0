@@ -1019,12 +1019,39 @@ function similarity(a, b) {
   return matched.length / Math.max(wa.length, 1);
 }
 
+function normalizeOCRText(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sentenceCoverage(expected, detected) {
+  var expWords = normalizeOCRText(expected)
+    .split(" ")
+    .filter(function(w) { return w.length > 2; });
+
+  var det = normalizeOCRText(detected);
+
+  if (expWords.length === 0) return 0;
+
+  var found = 0;
+  expWords.forEach(function(w) {
+    if (det.indexOf(w) >= 0) found++;
+  });
+
+  return found / expWords.length;
+}
+
 function runOCR(dataUrl) {
   var prog = document.getElementById("ocrProgress");
   var bar  = document.getElementById("ocrBar");
   var status = document.getElementById("ocrStatus");
   var fb   = document.getElementById("hwFeedback");
+
   if (prog) prog.className = "ocr-progress show";
+
   Tesseract.recognize(dataUrl, "eng", {
     logger: function(m) {
       if (m.status === "recognizing text" && bar) {
@@ -1035,19 +1062,43 @@ function runOCR(dataUrl) {
     }
   }).then(function(result) {
     if (prog) prog.className = "ocr-progress";
-    ocrText = result.data.text;
+
+    ocrText = result.data.text || "";
+
     var missing = [];
+    var foundCount = 0;
+
     for (var i = 0; i < lesson.sentences.length; i++) {
-      if (similarity(lesson.sentences[i], ocrText) < 0.5) missing.push(i + 1);
+      var coverage = sentenceCoverage(lesson.sentences[i], ocrText);
+
+      if (coverage >= 0.45) {
+        foundCount++;
+      } else {
+        missing.push(i + 1);
+      }
     }
-    if (missing.length === 0) {
-      hwApproved = true; saveSession(); renderHandwriting();
+
+    var total = lesson.sentences.length;
+    var pctFound = Math.round((foundCount / total) * 100);
+
+    if (foundCount >= Math.ceil(total * 0.65)) {
+      hwApproved = true;
+      saveSession();
+      renderHandwriting();
     } else {
-      if (fb) { fb.className = "feedback show wrong"; fb.textContent = "Could not find sentences " + missing.join(", ") + ". Make sure all are visible and try again."; }
+      if (fb) {
+        fb.className = "feedback show wrong";
+        fb.textContent =
+          "Detected " + foundCount + " of " + total +
+          " sentences (" + pctFound + "%). Try again with the full page visible.";
+      }
     }
   }).catch(function() {
     if (prog) prog.className = "ocr-progress";
-    if (fb) { fb.className = "feedback show wrong"; fb.textContent = "Could not read the photo. Try better lighting."; }
+    if (fb) {
+      fb.className = "feedback show wrong";
+      fb.textContent = "Could not read the photo. Try better lighting.";
+    }
   });
 }
 
