@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel do Professor — Bento English</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0f172a;
+  min-height: 100vh;
+  color: #e5e7eb;
+  padding-bottom: 40px;
+}
+.header {
+  background: #111827;
+  padding: 18px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header h1 { color: #fff; font-size: 18px; font-weight: 850; }
+.header p  { color: rgba(255,255,255,0.48); font-size: 12px; margin-top: 3px; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-refresh { background: rgba(59,130,246,0.18); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35); }
+.btn-logout { background: rgba(255,255,255,0.08); color: #fff; }
+.btn-test-lesson { background: #f59e0b; color: #111827; }
+.btn-back { background: rgba(255,255,255,0.08); color: #fff; display: none; }
+.content {
+  padding: 18px 14px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+@media (min-width: 700px) {
+  .stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.stat-box {
+  background: #1e293b;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 15px 12px;
+  text-align: center;
+}
+.stat-n { font-size: 26px; font-weight: 900; color: #60a5fa; line-height: 1; }
+.stat-l { font-size: 10px; color: rgba(255,255,255,0.45); margin-top: 6px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.7px; }
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+@media (min-width: 700px) {
+  .toolbar { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+.search {
+  width: 100%;
+  background: #111827;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 12px 13px;
+  font-size: 14px;
+  outline: none;
+}
+.filter-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.filter {
+  flex: 0 0 auto;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.72);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.filter.active { background: rgba(59,130,246,0.18); color: #93c5fd; border-color: rgba(59,130,246,0.45); }
+.section-title {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.38);
+  margin: 12px 0 10px;
+}
+.student-card, .detail-card, .alert-card {
+  background: #1e293b;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  padding: 15px;
+  margin-bottom: 10px;
+}
+.student-card { cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+.student-card:active { transform: scale(0.99); }
+.student-card.warning { border-color: rgba(248,113,113,0.45); }
+.student-card.active-session { border-color: rgba(251,191,36,0.45); }
+.student-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.student-name { font-size: 15px; font-weight: 850; color: #fff; }
+.student-email { font-size: 11px; color: rgba(255,255,255,0.42); margin-top: 2px; word-break: break-all; }
+.badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.blue { background: rgba(59,130,246,0.16); color: #93c5fd; }
+.green { background: rgba(34,197,94,0.16); color: #86efac; }
+.yellow { background: rgba(234,179,8,0.16); color: #fde68a; }
+.red { background: rgba(239,68,68,0.16); color: #fca5a5; }
+.gray { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+.purple { background: rgba(168,85,247,0.17); color: #d8b4fe; }
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.mini {
+  background: rgba(15,23,42,0.55);
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.mini-n { font-size: 18px; color: #fff; font-weight: 850; }
+.mini-l { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 3px; font-weight: 700; }
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 13px;
+}
+.row:first-child { border-top: none; }
+.row-main { flex: 1; min-width: 0; }
+.row-title { color: #fff; font-weight: 750; line-height: 1.35; }
+.row-sub { color: rgba(255,255,255,0.42); font-size: 11px; margin-top: 2px; }
+.score { font-weight: 900; font-size: 14px; min-width: 46px; text-align: right; }
+.good { color: #86efac; }
+.ok { color: #fde68a; }
+.bad { color: #fca5a5; }
+.empty {
+  color: rgba(255,255,255,0.42);
+  font-size: 13px;
+  padding: 16px;
+  text-align: center;
+}
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255,255,255,0.12);
+  border-top-color: #60a5fa;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 42px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.hidden { display: none !important; }
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.detail-name { color: #fff; font-size: 20px; font-weight: 900; }
+.detail-email { color: rgba(255,255,255,0.45); font-size: 12px; margin-top: 4px; word-break: break-all; }
+.note {
+  background: rgba(59,130,246,0.10);
+  border: 1px solid rgba(59,130,246,0.25);
+  color: #bfdbfe;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+.alert-card {
+  border-color: rgba(248,113,113,0.35);
+  background: rgba(127,29,29,0.22);
+}
+.small-muted { color: rgba(255,255,255,0.45); font-size: 11px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🎓 Painel do Professor</h1>
+    <p>Bento English — acompanhamento dos alunos</p>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-back" id="backBtn" onclick="showList()">← Voltar</button>
+    <button class="btn btn-test-lesson" onclick="teacherTestLesson()">🧪 Testar aula</button>
+    <button class="btn btn-refresh" onclick="loadData()">Atualizar</button>
+    <button class="btn btn-logout" onclick="logout()">Sair</button>
+  </div>
+</div>
+
+<div class="content">
+  <div id="listView">
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-n" id="statStudents">—</div><div class="stat-l">Alunos</div></div>
+      <div class="stat-box"><div class="stat-n" id="statLessons">—</div><div class="stat-l">Lições concluídas</div></div>
+      <div class="stat-box"><div class="stat-n" id="statToday">—</div><div class="stat-l">Concluídas hoje</div></div>
+      <div class="stat-box"><div class="stat-n" id="statAbandoned">—</div><div class="stat-l">Desistências</div></div>
+    </div>
+
+    <div class="toolbar">
+      <input class="search" id="searchBox" placeholder="Buscar aluno por nome ou e-mail..." oninput="renderStudents()">
+      <div class="filter-row">
+        <button class="filter active" data-filter="all" onclick="setFilter('all')">Todos</button>
+        <button class="filter" data-filter="today" onclick="setFilter('today')">Ativos hoje</button>
+        <button class="filter" data-filter="progress" onclick="setFilter('progress')">Lição em andamento</button>
+        <button class="filter" data-filter="abandoned" onclick="setFilter('abandoned')">Desistências</button>
+        <button class="filter" data-filter="attention" onclick="setFilter('attention')">Atenção</button>
+      </div>
+    </div>
+
+    <div class="section-title">Alunos</div>
+    <div id="container"><div class="spinner"></div></div>
+  </div>
+
+  <div id="detailView" class="hidden">
+    <div id="detailContainer"></div>
+  </div>
+</div>
+
+<script>
+var SUPABASE_URL  = "https://kqggtikhgzvzreiraosi.supabase.co";
+var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxZ2d0aWtoZ3p2enJlaXJhb3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTE2ODEsImV4cCI6MjA5ODA4NzY4MX0.K7yVSDxf-uerPJeVjO4huJdEqVmR2Ty3jy1jyYMKk58";
+var TEACHER_EMAIL = "gui@bento.host";
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+var studentsData = [];
+var resultsData = [];
+var sessionsData = [];
+var lessonsData = [];
+var currentFilter = "all";
+
+function esc(v) {
+  return String(v || "").replace(/[&<>"']/g, function(c) {
+    return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+  });
+}
+
+function fmtDate(v) {
+  if (!v) return "—";
+  try {
+    return new Date(v).toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit", year:"2-digit" });
+  } catch(e) { return "—"; }
+}
+
+function fmtTime(v) {
+  if (!v) return "—";
+  try {
+    return new Date(v).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+  } catch(e) { return "—"; }
+}
+
+function todayStartISO() {
+  var d = new Date();
+  d.setHours(0,0,0,0);
+  return d.toISOString();
+}
+
+function scoreClass(score) {
+  score = score || 0;
+  if (score >= 80) return "good";
+  if (score >= 60) return "ok";
+  return "bad";
+}
+
+function getLessonName(l) {
+  if (!l) return "Lição";
+  return l.pattern || l.subgroup || l.title || "Lição";
+}
+
+function getStudentName(s) {
+  return s.name || s.email || "Aluno sem nome";
+}
+
+function getStudentEmail(s) {
+  return s.email || "";
+}
+
+async function init() {
+  var r = await sb.auth.getSession();
+  if (!r.data.session) { window.location.href = "login.html"; return; }
+
+  var email = String(r.data.session.user.email || "").toLowerCase();
+  if (email !== TEACHER_EMAIL) {
+    var row = await sb.from("students").select("role").eq("id", r.data.session.user.id).single();
+    if (!row.data || row.data.role !== "teacher") {
+      document.getElementById("container").innerHTML = '<div class="empty">Acesso restrito ao professor.</div>';
+      return;
+    }
+  }
+
+  loadData();
+}
+
+async function loadData() {
+  document.getElementById("container").innerHTML = '<div class="spinner"></div>';
+
+  try {
+    var students = await sb.from("students").select("*").order("created_at", { ascending: true });
+
+    var results = await sb.from("lesson_results")
+      .select("*, lessons(group_name,subgroup,pattern)")
+      .order("completed_at", { ascending: false });
+
+    var sessions = await sb.from("lesson_sessions")
+      .select("*, lessons(group_name,subgroup,pattern)")
+      .order("updated_at", { ascending: false });
+
+    if (students.error) throw students.error;
+    if (results.error) throw results.error;
+    if (sessions.error) {
+      sessionsData = [];
+    } else {
+      sessionsData = sessions.data || [];
+    }
+
+    studentsData = students.data || [];
+    resultsData = results.data || [];
+
+    updateStats();
+    renderStudents();
+  } catch(e) {
+    document.getElementById("container").innerHTML = '<div class="empty">Erro ao carregar painel:<br><br>' + esc(e.message) + '</div>';
+  }
+}
+
+function updateStats() {
+  var today = todayStartISO();
+  var todayResults = resultsData.filter(function(r){ return r.completed_at >= today; });
+  var abandoned = sessionsData.filter(function(s){ return s.status === "abandoned"; });
+
+  document.getElementById("statStudents").textContent = studentsData.length;
+  document.getElementById("statLessons").textContent = resultsData.length;
+  document.getElementById("statToday").textContent = todayResults.length;
+  document.getElementById("statAbandoned").textContent = abandoned.length;
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll(".filter").forEach(function(btn) {
+    btn.classList.toggle("active", btn.getAttribute("data-filter") === f);
+  });
+  renderStudents();
+}
+
+function studentSummary(student) {
+  var sid = student.id;
+  var res = resultsData.filter(function(r){ return r.student_id === sid; });
+  var ses = sessionsData.filter(function(s){ return s.student_id === sid; });
+  var today = todayStartISO();
+
+  var todayDone = res.filter(function(r){ return r.completed_at >= today; });
+  var inProgress = ses.filter(function(s){ return s.status === "in_progress"; });
+  var abandoned = ses.filter(function(s){ return s.status === "abandoned"; });
+  var completedSessions = ses.filter(function(s){ return s.status === "completed"; });
+
+  var avg = res.length ? Math.round(res.reduce(function(a,r){ return a + (r.score || 0); }, 0) / res.length) : 0;
+  var totalWords = res.reduce(function(a,r){ return a + (r.words_total || 0); }, 0);
+  var last = res[0] || null;
+
+  return {
+    results: res,
+    sessions: ses,
+    todayDone: todayDone,
+    inProgress: inProgress,
+    abandoned: abandoned,
+    completedSessions: completedSessions,
+    avg: avg,
+    totalWords: totalWords,
+    last: last
+  };
+}
+
+function shouldShow(student, sum) {
+  var q = String(document.getElementById("searchBox").value || "").toLowerCase().trim();
+  var hay = (getStudentName(student) + " " + getStudentEmail(student)).toLowerCase();
+  if (q && hay.indexOf(q) === -1) return false;
+
+  if (currentFilter === "today") return sum.todayDone.length > 0 || sum.inProgress.length > 0;
+  if (currentFilter === "progress") return sum.inProgress.length > 0;
+  if (currentFilter === "abandoned") return sum.abandoned.length > 0;
+  if (currentFilter === "attention") return sum.abandoned.length > 0 || (sum.avg > 0 && sum.avg < 60);
+  return true;
+}
+
+function renderStudents() {
+  var html = "";
+
+  studentsData.forEach(function(student) {
+    var sum = studentSummary(student);
+    if (!shouldShow(student, sum)) return;
+
+    var cls = "student-card";
+    if (sum.abandoned.length > 0) cls += " warning";
+    else if (sum.inProgress.length > 0) cls += " active-session";
+
+    html += '<div class="' + cls + '" onclick="showStudent(\'' + student.id + '\')">';
+    html += '<div class="student-top">';
+    html += '<div><div class="student-name">👤 ' + esc(getStudentName(student)) + '</div>';
+    html += '<div class="student-email">' + esc(getStudentEmail(student)) + '</div></div>';
+    html += '<div class="small-muted">Ver detalhes ›</div>';
+    html += '</div>';
+
+    html += '<div class="badges">';
+    html += '<span class="badge blue">' + sum.results.length + ' lições</span>';
+    html += '<span class="badge blue">' + sum.todayDone.length + '/3 hoje</span>';
+    if (sum.avg > 0) html += '<span class="badge ' + (sum.avg >= 80 ? "green" : sum.avg >= 60 ? "yellow" : "red") + '">' + sum.avg + ' média</span>';
+    if (sum.inProgress.length > 0) html += '<span class="badge yellow">em andamento</span>';
+    if (sum.abandoned.length > 0) html += '<span class="badge red">' + sum.abandoned.length + ' desistência(s)</span>';
+    html += '</div>';
+
+    html += '<div class="mini-grid">';
+    html += '<div class="mini"><div class="mini-n">' + sum.totalWords + '</div><div class="mini-l">palavras</div></div>';
+    html += '<div class="mini"><div class="mini-n">' + (sum.last ? fmtDate(sum.last.completed_at) : "—") + '</div><div class="mini-l">última lição</div></div>';
+    html += '<div class="mini"><div class="mini-n">' + (sum.todayDone.length >= 3 ? "sim" : "não") + '</div><div class="mini-l">limite diário</div></div>';
+    html += '</div>';
+
+    html += '</div>';
+  });
+
+  if (!html) html = '<div class="empty">Nenhum aluno encontrado para este filtro.</div>';
+  document.getElementById("container").innerHTML = html;
+}
+
+function showStudent(studentId) {
+  var student = studentsData.find(function(s){ return s.id === studentId; });
+  if (!student) return;
+
+  var sum = studentSummary(student);
+  var html = "";
+
+  html += '<div class="detail-card">';
+  html += '<div class="detail-header">';
+  html += '<div><div class="detail-name">👤 ' + esc(getStudentName(student)) + '</div>';
+  html += '<div class="detail-email">' + esc(getStudentEmail(student)) + '</div></div>';
+  html += '<div class="badge ' + (sum.avg >= 80 ? "green" : sum.avg >= 60 ? "yellow" : sum.avg > 0 ? "red" : "gray") + '">' + (sum.avg || "—") + ' média</div>';
+  html += '</div>';
+
+  if (sum.abandoned.length > 0) {
+    html += '<div class="alert-card">';
+    html += '<div class="row-title">⚠ Atenção: ' + sum.abandoned.length + ' lição(ões) abandonada(s)</div>';
+    html += '<div class="row-sub">Vale conversar com o aluno depois. Desistência é pista pedagógica, não sentença.</div>';
+    html += '</div>';
+  }
+
+  if (sum.inProgress.length > 0) {
+    var ip = sum.inProgress[0];
+    html += '<div class="note">📌 Lição em andamento: <strong>' + esc(getLessonName(ip.lessons)) + '</strong><br>Fase atual: <strong>' + esc(ip.phase || "words") + '</strong><br>Atualizada em: ' + fmtTime(ip.updated_at) + '</div>';
+  }
+
+  html += '<div class="stat-grid">';
+  html += '<div class="stat-box"><div class="stat-n">' + sum.results.length + '</div><div class="stat-l">lições</div></div>';
+  html += '<div class="stat-box"><div class="stat-n">' + sum.todayDone.length + '/3</div><div class="stat-l">hoje</div></div>';
+  html += '<div class="stat-box"><div class="stat-n">' + sum.totalWords + '</div><div class="stat-l">palavras</div></div>';
+  html += '<div class="stat-box"><div class="stat-n">' + sum.abandoned.length + '</div><div class="stat-l">desistências</div></div>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div class="section-title">Histórico de lições concluídas</div>';
+  html += '<div class="detail-card">';
+  if (sum.results.length === 0) {
+    html += '<div class="empty">Nenhuma lição concluída ainda.</div>';
+  } else {
+    sum.results.slice(0, 30).forEach(function(r) {
+      var l = r.lessons || {};
+      html += '<div class="row">';
+      html += '<div class="row-main">';
+      html += '<div class="row-title">📚 ' + esc(getLessonName(l)) + '</div>';
+      html += '<div class="row-sub">' + esc(l.group_name || "Bento") + ' · ' + esc(l.subgroup || "") + ' · ' + fmtTime(r.completed_at) + '</div>';
+      html += '</div>';
+      html += '<div class="score ' + scoreClass(r.score) + '">' + (r.score || 0) + '</div>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  html += '<div class="section-title">Sessões / desistências</div>';
+  html += '<div class="detail-card">';
+  if (sum.sessions.length === 0) {
+    html += '<div class="empty">Nenhuma sessão registrada.</div>';
+  } else {
+    sum.sessions.slice(0, 30).forEach(function(s) {
+      var statusClass = s.status === "abandoned" ? "red" : s.status === "completed" ? "green" : "yellow";
+      var l = s.lessons || {};
+      html += '<div class="row">';
+      html += '<div class="row-main">';
+      html += '<div class="row-title">' + (s.status === "abandoned" ? "⚠ " : s.status === "completed" ? "✅ " : "⏳ ") + esc(getLessonName(l)) + '</div>';
+      html += '<div class="row-sub">Status: ' + esc(s.status || "—") + ' · fase: ' + esc(s.phase || "—") + ' · atualizado: ' + fmtTime(s.updated_at) + '</div>';
+      html += '</div>';
+      html += '<span class="badge ' + statusClass + '">' + esc(s.status || "—") + '</span>';
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  document.getElementById("detailContainer").innerHTML = html;
+  document.getElementById("listView").classList.add("hidden");
+  document.getElementById("detailView").classList.remove("hidden");
+  document.getElementById("backBtn").style.display = "inline-block";
+  window.scrollTo(0, 0);
+}
+
+function showList() {
+  document.getElementById("detailView").classList.add("hidden");
+  document.getElementById("listView").classList.remove("hidden");
+  document.getElementById("backBtn").style.display = "none";
+  window.scrollTo(0, 0);
+}
+
+function teacherTestLesson() {
+  window.location.href = "aula.html?teacher_test=1";
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  window.location.href = "login.html";
+}
+
+init();
+</script>
+</body>
+</html>
