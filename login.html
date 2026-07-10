@@ -52,7 +52,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <script>
 var SUPABASE_URL="https://kqggtikhgzvzreiraosi.supabase.co";
-var SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImtxZ2d0aWtoZ3p2enJlaXJhb3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTE2ODEsImV4cCI6MjA5ODA4NzY4MX0.K7yVSDxf-uerPJeVjO4huJdEqVmR2Ty3jy1jyYMKk58";
+var SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxZ2d0aWtoZ3p2enJlaXJhb3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTE2ODEsImV4cCI6MjA5ODA4NzY4MX0.K7yVSDxf-uerPJeVjO4huJdEqVmR2Ty3jy1jyYMKk58";
 var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
 sb.auth.getSession().then(function(r){if(r.data.session)location.href="index.html"});
 function switchTab(tab){document.getElementById("loginForm").style.display=tab==="login"?"block":"none";document.getElementById("signupForm").style.display=tab==="signup"?"block":"none";document.querySelectorAll(".tab").forEach(function(t,i){t.classList.toggle("active",(i===0&&tab==="login")||(i===1&&tab==="signup"))})}

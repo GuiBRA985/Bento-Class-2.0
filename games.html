@@ -20,7 +20,7 @@
 </div></div>
 <script>
 var SUPABASE_URL="https://kqggtikhgzvzreiraosi.supabase.co";
-var SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImtxZ2d0aWtoZ3p2enJlaXJhb3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTE2ODEsImV4cCI6MjA5ODA4NzY4MX0.K7yVSDxf-uerPJeVjO4huJdEqVmR2Ty3jy1jyYMKk58";
+var SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxZ2d0aWtoZ3p2enJlaXJhb3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTE2ODEsImV4cCI6MjA5ODA4NzY4MX0.K7yVSDxf-uerPJeVjO4huJdEqVmR2Ty3jy1jyYMKk58";
 var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
 (async()=>{const s=await sb.auth.getSession();if(!s.data.session){location.href="login.html";return}await BentoWallet.refresh(sb,s.data.session.user.id)})();
 </script></body></html>
