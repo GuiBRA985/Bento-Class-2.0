@@ -1,42 +1,26 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Exercícios de Fixação — Bento English</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bento Lab — Bento English</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8"></script>
+<script src="assets/bentos.js" defer></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#2563C8;min-height:100vh;padding:20px;color:#fff}
-.wrap{max-width:720px;margin:0 auto}
-.header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-.back{background:rgba(255,255,255,.15);border:0;color:#fff;border-radius:10px;width:38px;height:38px;font-size:22px}
-h1{font-size:22px;font-weight:900}.sub{font-size:13px;opacity:.75;margin-top:4px;line-height:1.5}
-.card{background:#fff;color:#1a1a2e;border-radius:18px;padding:20px;margin-top:14px;box-shadow:0 2px 12px rgba(0,0,0,.12)}
-.card h2{font-size:18px;margin-bottom:8px}.card p{font-size:14px;color:#6b7280;line-height:1.6;margin-bottom:14px}
-.grid{display:grid;gap:10px}.btn{width:100%;border:0;border-radius:12px;padding:15px;background:#2563C8;color:#fff;font-weight:800;font-size:15px;text-align:left}.btn:disabled{background:#e2e8f0;color:#64748b}
-.note{font-size:12px;color:#64748b;line-height:1.5;margin-top:14px;background:#f8faff;border-radius:12px;padding:12px}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="header">
-    <button class="back" onclick="window.location.href='index.html'">‹</button>
-    <div>
-      <h1>Exercícios de Fixação</h1>
-      <div class="sub">Revisão do conteúdo estudado. Aqui não são liberadas novas lições.</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Prática disponível</h2>
-    <p>Use esta área para reforçar vocabulário, escuta e pronúncia depois de concluir a carga diária de estudos.</p>
-    <div class="grid">
-      <button class="btn" disabled>🎧 Treino Auditivo — em breve</button>
-      <button class="btn" disabled>🔤 Revisão de Vocabulário — em breve</button>
-      <button class="btn" disabled>🎙 Laboratório de Pronúncia — em breve</button>
-    </div>
-    <div class="note">O Bento Class separa aulas de exercícios. As aulas são sequência acadêmica; esta área serve apenas para consolidação.</div>
-  </div>
-</div>
-</body>
-</html>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#2563C8;min-height:100vh;padding:20px;color:#fff}.wrap{max-width:760px;margin:auto}.header{display:flex;align-items:center;justify-content:space-between;gap:12px}.back{background:rgba(255,255,255,.16);border:0;color:#fff;border-radius:10px;padding:10px 13px;font-weight:800}.wallet{background:#facc15;color:#422006;padding:8px 12px;border-radius:999px;font-weight:900}.card{background:#fff;color:#111827;border-radius:18px;padding:20px;margin-top:15px;box-shadow:0 2px 12px rgba(0,0,0,.12)}.card p{font-size:13px;color:#64748b;line-height:1.55}.challenge{border:1px solid #e2e8f0;border-radius:14px;padding:15px;margin-top:10px;display:flex;align-items:center;gap:12px}.challenge .icon{font-size:28px}.challenge .info{flex:1}.challenge strong{display:block;margin-bottom:4px}.reward{font-size:12px;font-weight:900;color:#166534}.btn{border:0;border-radius:10px;padding:10px 12px;background:#2563C8;color:#fff;font-weight:800}.btn:disabled{background:#cbd5e1}.notice{margin-top:14px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:12px;border-radius:12px;font-size:12px;line-height:1.5}
+</style></head>
+<body><div class="wrap">
+<div class="header"><button class="back" onclick="location.href='index.html'">← Dashboard</button><div class="wallet"><span id="bentoBalance">—</span> Bentos</div></div>
+<div style="margin-top:18px"><h1>🧪 Bento Lab</h1><p style="opacity:.8;margin-top:5px">Learn. Experiment. Earn.</p></div>
+<div class="card"><h2>Practice challenges</h2><p>Esta primeira versão prepara a economia dos Bentos. As recompensas reais devem ser liberadas somente por funções seguras no Supabase.</p>
+<div class="challenge"><div class="icon">🎧</div><div class="info"><strong>Listening Review</strong><span class="reward">Future reward: +3 Bentos</span></div><button class="btn" disabled>Em breve</button></div>
+<div class="challenge"><div class="icon">🔤</div><div class="info"><strong>Vocabulary Recall</strong><span class="reward">Future reward: +3 Bentos</span></div><button class="btn" disabled>Em breve</button></div>
+<div class="challenge"><div class="icon">🎙</div><div class="info"><strong>Pronunciation Challenge</strong><span class="reward">Future reward: +5 Bentos</span></div><button class="btn" disabled>Em breve</button></div>
+<div class="challenge"><div class="icon">🗣</div><div class="info"><strong>Talk to Bento — 5 minutes</strong><span class="reward">Future cost: 25 Bentos</span></div><button class="btn" disabled>Locked</button></div>
+<div class="notice"><strong>Segurança:</strong> o navegador nunca decide quantos Bentos o aluno ganhou. Crédito e débito serão executados no banco por funções autorizadas.</div>
+</div></div>
+<script>
+var SUPABASE_URL="https://kqggtikhgzvzreiraosi.supabase.co";
+var SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImtxZ2d0aWtoZ3p2enJlaXJhb3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTE2ODEsImV4cCI6MjA5ODA4NzY4MX0.K7yVSDxf-uerPJeVjO4huJdEqVmR2Ty3jy1jyYMKk58";
+var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+(async()=>{const s=await sb.auth.getSession();if(!s.data.session){location.href="login.html";return}await BentoWallet.refresh(sb,s.data.session.user.id)})();
+</script></body></html>

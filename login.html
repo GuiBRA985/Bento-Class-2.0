@@ -4,219 +4,83 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bento English — Login</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #2563C8;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-.logo-wrap {
-  text-align: center;
-  margin-bottom: 32px;
-}
-.logo {
-  background: #fff;
-  color: #2563C8;
-  font-size: 32px;
-  font-weight: 900;
-  font-family: Georgia, serif;
-  width: 72px; height: 72px;
-  border-radius: 20px;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 auto 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-}
-.logo-title { font-size: 22px; font-weight: 800; color: #fff; }
-.logo-sub   { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 4px; }
-
-.card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 28px 24px;
-  width: 100%;
-  max-width: 380px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-}
-.tabs {
-  display: flex;
-  background: #f0f4fb;
-  border-radius: 10px;
-  padding: 4px;
-  margin-bottom: 24px;
-}
-.tab {
-  flex: 1; padding: 8px;
-  border: none; border-radius: 8px;
-  font-size: 14px; font-weight: 600;
-  cursor: pointer; font-family: inherit;
-  background: transparent; color: #6b7280;
-  transition: all 0.15s;
-}
-.tab.active { background: #fff; color: #2563C8; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-
-.field { margin-bottom: 16px; }
-.field label {
-  display: block; font-size: 12px; font-weight: 700;
-  color: #374151; margin-bottom: 6px; letter-spacing: 0.3px;
-}
-.field input {
-  width: 100%; padding: 12px 14px;
-  border: 1.5px solid #e2e8f0; border-radius: 10px;
-  font-size: 15px; font-family: inherit; outline: none;
-  transition: border-color 0.15s;
-}
-.field input:focus { border-color: #2563C8; }
-
-.submit-btn {
-  width: 100%; padding: 14px;
-  background: #2563C8; color: #fff;
-  border: none; border-radius: 10px;
-  font-size: 16px; font-weight: 700;
-  cursor: pointer; font-family: inherit;
-  transition: background 0.15s;
-  margin-top: 4px;
-}
-.submit-btn:hover { background: #1a4a9e; }
-.submit-btn:disabled { background: #e2e8f0; color: #9ca3af; cursor: not-allowed; }
-
-.msg {
-  margin-top: 14px; padding: 10px 14px;
-  border-radius: 8px; font-size: 13px;
-  display: none;
-}
-.msg.error   { display: block; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-.msg.success { display: block; background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#2563C8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.page-badge{position:fixed;top:18px;right:18px;background:#facc15;color:#111827;font-weight:900;padding:7px 13px;border-radius:999px;font-size:12px;letter-spacing:.12em;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.logo-wrap{text-align:center;margin-bottom:24px}
+.logo{background:#fff;color:#2563C8;font-size:32px;font-weight:900;font-family:Georgia,serif;width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.logo-title{font-size:22px;font-weight:800;color:#fff}.logo-sub{font-size:13px;color:rgba(255,255,255,.75);margin-top:4px}
+.beta-note{max-width:380px;width:100%;margin:0 auto 14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:14px;padding:12px 14px;text-align:center;font-size:12px;line-height:1.5}
+.card{background:#fff;border-radius:20px;padding:28px 24px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.tabs{display:flex;background:#f0f4fb;border-radius:10px;padding:4px;margin-bottom:24px}
+.tab{flex:1;padding:8px;border:0;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:#6b7280}.tab.active{background:#fff;color:#2563C8;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.field{margin-bottom:16px}.field label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px}.field input{width:100%;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:15px;font-family:inherit;outline:0}.field input:focus{border-color:#2563C8}
+.submit-btn{width:100%;padding:14px;background:#2563C8;color:#fff;border:0;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}.submit-btn:disabled{background:#e2e8f0;color:#9ca3af}
+.msg{margin-top:14px;padding:10px 14px;border-radius:8px;font-size:13px;display:none}.msg.error{display:block;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}.msg.success{display:block;background:#dcfce7;color:#166534;border:1px solid #86efac}
+.forgot{display:block;text-align:right;margin:-6px 0 14px;font-size:12px;color:#2563C8;text-decoration:none;font-weight:700}
 </style>
 </head>
 <body>
-
+<div class="page-badge">BETA</div>
 <div class="logo-wrap">
   <div class="logo">B</div>
   <div class="logo-title">Bento English</div>
   <div class="logo-sub">Phonics Learning Platform</div>
 </div>
-
+<div class="beta-note"><strong>Founding Beta.</strong> Você está entre os primeiros alunos ajudando a construir a versão final.</div>
 <div class="card">
   <div class="tabs">
     <button class="tab active" onclick="switchTab('login')">Sign In</button>
     <button class="tab" onclick="switchTab('signup')">Sign Up</button>
   </div>
-
-  <!-- LOGIN -->
   <div id="loginForm">
-    <div class="field">
-      <label>Email</label>
-      <input type="email" id="loginEmail" placeholder="your@email.com" autocomplete="email">
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
-    </div>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" autocomplete="email"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPass" autocomplete="current-password"></div>
+    <a class="forgot" href="#" onclick="recoverPassword();return false">Forgot your password?</a>
     <button class="submit-btn" onclick="login()">Sign In</button>
     <div class="msg" id="loginMsg"></div>
   </div>
-
-  <!-- SIGNUP -->
   <div id="signupForm" style="display:none">
-    <div class="field">
-      <label>Your Name</label>
-      <input type="text" id="signupName" placeholder="John Smith">
-    </div>
-    <div class="field">
-      <label>Email</label>
-      <input type="email" id="signupEmail" placeholder="your@email.com" autocomplete="email">
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" id="signupPass" placeholder="At least 6 characters" autocomplete="new-password">
-    </div>
+    <div class="field"><label>Your Name</label><input type="text" id="signupName" maxlength="100" autocomplete="name"></div>
+    <div class="field"><label>Email</label><input type="email" id="signupEmail" maxlength="254" autocomplete="email"></div>
+    <div class="field"><label>Password</label><input type="password" id="signupPass" minlength="10" maxlength="128" autocomplete="new-password" placeholder="At least 10 characters"></div>
     <button class="submit-btn" onclick="signup()">Create Account</button>
     <div class="msg" id="signupMsg"></div>
   </div>
 </div>
-
 <script>
-var SUPABASE_URL  = "https://kqggtikhgzvzreiraosi.supabase.co";
-var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxZ2d0aWtoZ3p2enJlaXJhb3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTE2ODEsImV4cCI6MjA5ODA4NzY4MX0.K7yVSDxf-uerPJeVjO4huJdEqVmR2Ty3jy1jyYMKk58";
-var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
-// Redirect if already logged in
-sb.auth.getSession().then(function(r) {
-  if (r.data.session) window.location.href = "index.html";
-});
-
-function switchTab(tab) {
-  document.getElementById("loginForm").style.display  = tab === "login"  ? "block" : "none";
-  document.getElementById("signupForm").style.display = tab === "signup" ? "block" : "none";
-  document.querySelectorAll(".tab").forEach(function(t, i) {
-    t.classList.toggle("active", (i === 0 && tab === "login") || (i === 1 && tab === "signup"));
-  });
+var SUPABASE_URL="https://kqggtikhgzvzreiraosi.supabase.co";
+var SUPABASE_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImtxZ2d0aWtoZ3p2enJlaXJhb3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTE2ODEsImV4cCI6MjA5ODA4NzY4MX0.K7yVSDxf-uerPJeVjO4huJdEqVmR2Ty3jy1jyYMKk58";
+var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+sb.auth.getSession().then(function(r){if(r.data.session)location.href="index.html"});
+function switchTab(tab){document.getElementById("loginForm").style.display=tab==="login"?"block":"none";document.getElementById("signupForm").style.display=tab==="signup"?"block":"none";document.querySelectorAll(".tab").forEach(function(t,i){t.classList.toggle("active",(i===0&&tab==="login")||(i===1&&tab==="signup"))})}
+function showMsg(el,type,text){el.className="msg "+type;el.textContent=text}
+async function login(){
+ const email=document.getElementById("loginEmail").value.trim(), pass=document.getElementById("loginPass").value, msg=document.getElementById("loginMsg"), btn=document.querySelector("#loginForm .submit-btn");
+ if(!email||!pass){showMsg(msg,"error","Please fill in all fields.");return}
+ btn.disabled=true;btn.textContent="Signing in...";
+ const r=await sb.auth.signInWithPassword({email,password:pass});
+ if(r.error){showMsg(msg,"error","Invalid email or password.");btn.disabled=false;btn.textContent="Sign In"}else location.href="index.html"
 }
-
-async function login() {
-  var email = document.getElementById("loginEmail").value.trim();
-  var pass  = document.getElementById("loginPass").value;
-  var msg   = document.getElementById("loginMsg");
-  if (!email || !pass) { showMsg(msg, "error", "Please fill in all fields."); return; }
-  var btn = document.querySelector("#loginForm .submit-btn");
-  btn.disabled = true; btn.textContent = "Signing in...";
-  var r = await sb.auth.signInWithPassword({ email: email, password: pass });
-  if (r.error) {
-    showMsg(msg, "error", "Invalid email or password.");
-    btn.disabled = false; btn.textContent = "Sign In";
-  } else {
-    window.location.href = "index.html";
-  }
+async function signup(){
+ const name=document.getElementById("signupName").value.trim(), email=document.getElementById("signupEmail").value.trim(), pass=document.getElementById("signupPass").value, msg=document.getElementById("signupMsg"), btn=document.querySelector("#signupForm .submit-btn");
+ if(!name||!email||!pass){showMsg(msg,"error","Please fill in all fields.");return}
+ if(name.length>100||pass.length<10){showMsg(msg,"error","Use a valid name and a password with at least 10 characters.");return}
+ btn.disabled=true;btn.textContent="Creating account...";
+ const r=await sb.auth.signUp({email,password:pass,options:{data:{name}}});
+ if(r.error){showMsg(msg,"error","Could not create the account. Check your details or try again.");btn.disabled=false;btn.textContent="Create Account";return}
+ if(r.data.session) location.href="index.html";
+ else {showMsg(msg,"success","Check your email to confirm your account.");btn.disabled=false;btn.textContent="Create Account"}
 }
-
-async function signup() {
-  var name  = document.getElementById("signupName").value.trim();
-  var email = document.getElementById("signupEmail").value.trim();
-  var pass  = document.getElementById("signupPass").value;
-  var msg   = document.getElementById("signupMsg");
-  if (!name || !email || !pass) { showMsg(msg, "error", "Please fill in all fields."); return; }
-  if (pass.length < 6) { showMsg(msg, "error", "Password must be at least 6 characters."); return; }
-  var btn = document.querySelector("#signupForm .submit-btn");
-  btn.disabled = true; btn.textContent = "Creating account...";
-
-  // Create auth user (no email confirmation)
-  var r = await sb.auth.signUp({
-    email: email,
-    password: pass,
-    options: { data: { name: name } }
-  });
-
-  if (r.error) {
-    showMsg(msg, "error", r.error.message);
-    btn.disabled = false; btn.textContent = "Create Account";
-    return;
-  }
-
-  // Insert into students table
-  await sb.from("students").insert({ id: r.data.user.id, name: name });
-
-  window.location.href = "index.html";
+async function recoverPassword(){
+ const email=(document.getElementById("loginEmail").value||"").trim(), msg=document.getElementById("loginMsg");
+ if(!email){showMsg(msg,"error","Enter your email first.");return}
+ await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+"/reset-password.html"});
+ showMsg(msg,"success","If an account exists for this email, recovery instructions will be sent.")
 }
-
-function showMsg(el, type, text) {
-  el.className = "msg " + type;
-  el.textContent = text;
-}
-
-// Enter key support
-document.addEventListener("keydown", function(e) {
-  if (e.key === "Enter") {
-    if (document.getElementById("loginForm").style.display !== "none") login();
-    else signup();
-  }
-});
+document.addEventListener("keydown",function(e){if(e.key==="Enter"){document.getElementById("loginForm").style.display!=="none"?login():signup()}})
 </script>
 </body>
 </html>
