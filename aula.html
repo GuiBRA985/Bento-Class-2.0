@@ -860,32 +860,6 @@ function recordItem(idx, btnEl, type) {
 
 async function evaluateWord(idx, transcript) {
   closeDefinitionBoxes();
-  var word = lesson.words[idx];
-  showFeedback(idx, "info", "Evaluating pronunciation...", "word");
-  try {
-    var data = await callBentoEdgeFunction(pronunciationPayload(word, transcript), 15000);
-    var ok = isPronunciationCorrect(data);
-    var spoken = englishFeedback(data, ok ? "Very good. Your pronunciation was clear." : "Almost. Adjust your pronunciation and try again.");
-    if (ok) {
-      showFeedback(idx, "correct", feedbackCardHtml("correct", spoken, data, ok), "word");
-      speakFeedback(spoken);
-      wordsDone[idx] = true;
-      wordsCorrect++;
-      saveSession();
-    } else {
-      showFeedback(idx, "wrong", feedbackCardHtml("wrong", spoken, data, ok), "word");
-      speakFeedback(spoken);
-    }
-  } catch(e) {
-    console.warn("Pronunciation evaluation failed:", e);
-    var msg = "I couldn't evaluate your pronunciation right now. Please try again.";
-    showFeedback(idx, "info", msg, "word");
-    speakFeedback(msg);
-  }
-}
-
-async function evaluateWord(idx, transcript) {
-  closeDefinitionBoxes();
 
   var word = lesson.words[idx];
 
