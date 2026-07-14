@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson — Bento English</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #2563C8; min-height: 100vh; padding-bottom: 60px; }
+.header { background: #1a4a9e; padding: 16px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+.back-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 36px; height: 36px; border-radius: 10px; font-size: 20px; cursor: pointer; flex-shrink: 0; }
+.h-info { flex: 1; }
+.h-sub   { font-size: 11px; color: rgba(255,255,255,0.65); }
+.h-title { font-size: 16px; font-weight: 700; color: #fff; }
+.h-step  { background: rgba(255,255,255,0.18); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+.prog-wrap { padding: 10px 20px 0; }
+.prog-track { height: 6px; background: rgba(255,255,255,0.25); border-radius: 99px; }
+.prog-fill  { height: 100%; background: #fff; border-radius: 99px; transition: width 0.5s; }
+.card { background: #fff; border-radius: 16px; margin: 14px 16px 0; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; }
+.phase-label { padding: 14px 18px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.phase-dot { width: 8px; height: 8px; border-radius: 50%; }
+.section { padding: 12px 18px 20px; }
+.pattern-tag { display: inline-block; background: #ddeeff; color: #2563C8; font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-bottom: 10px; }
+.instruction { font-size: 13px; color: #6b7280; margin-bottom: 14px; line-height: 1.5; }
+.word-list { display: flex; flex-direction: column; gap: 8px; }
+.word-item { border-radius: 12px; overflow: hidden; border: 2px solid #e2e8f0; transition: border-color 0.15s; }
+.word-item.selected { border-color: #2563C8; }
+.word-item.done     { border-color: #16a34a; }
+.word-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; background: #f0f4fb; transition: background 0.15s; }
+.word-item.selected .word-row { background: #ddeeff; }
+.word-item.done     .word-row { background: #dcfce7; }
+.word-text { font-family: Georgia, serif; font-size: 20px; font-weight: 700; color: #1a1a2e; flex: 1; }
+.word-item.done .word-text { color: #16a34a; }
+.word-icon { font-size: 18px; }
+.word-actions { display: none; flex-direction: column; gap: 8px; padding: 10px 12px 12px; background: #f8faff; }
+.word-item.selected .word-actions { display: flex; }
+.btn-row { display: flex; gap: 8px; }
+.act-btn { flex: 1; padding: 11px 8px; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+.act-btn:active { opacity: 0.7; }
+.btn-say   { background: #2563C8; color: #fff; }
+.btn-spell { background: #7c3aed; color: #fff; }
+.btn-rec   { background: #dc2626; color: #fff; width: 100%; }
+.btn-def   { background: #059669; color: #fff; width: 100%; }
+.btn-bug   { background: #f59e0b; color: #111827; width: 100%; }
+.def-box   { display: none; margin-top: 6px; padding: 12px 14px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; }
+.def-box.show { display: block; }
+.def-word  { font-family: Georgia, serif; font-size: 16px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+.def-pos   { font-size: 11px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.def-text  { font-size: 13px; color: #374151; line-height: 1.6; margin-bottom: 4px; }
+.def-example { font-size: 12px; color: #6b7280; font-style: italic; line-height: 1.5; }
+.def-ipa { font-size: 15px; color: #059669; font-family: Georgia, serif; font-weight: 700; letter-spacing: 1px; }
+.def-audio-btn { background: #2563C8; color: #fff; border: none; border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btn-rec.recording { background: #991b1b; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
+@keyframes spin  { to{transform:rotate(360deg)} }
+.feedback { display: none; margin-top: 6px; padding: 10px 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.feedback.show    { display: block; }
+.feedback.correct { background: #dcfce7; color: #166534; border: 1.5px solid #16a34a; }
+.feedback.wrong   { background: #fee2e2; color: #991b1b; border: 1.5px solid #dc2626; }
+.feedback.info    { background: #eff6ff; color: #1e40af; border: 1.5px solid #93c5fd; }
+.hw-sentences { background: #f8faff; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+.hw-sent { font-family: Georgia, serif; font-size: 15px; line-height: 2.2; color: #1a1a2e; padding: 2px 0; border-bottom: 1px dashed #e2e8f0; }
+.hw-sent:last-child { border-bottom: none; }
+.hw-sent span { font-weight: 700; color: #2563C8; margin-right: 8px; }
+.photo-area { border: 2px dashed #2563C8; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; background: #f0f7ff; margin-bottom: 14px; transition: background 0.15s; }
+.photo-area:active { background: #ddeeff; }
+.photo-area.has-photo { border-style: solid; border-color: #16a34a; background: #dcfce7; }
+.photo-icon  { font-size: 36px; margin-bottom: 8px; }
+.photo-label { font-size: 14px; font-weight: 700; color: #2563C8; margin-bottom: 4px; }
+.photo-sub   { font-size: 12px; color: #6b7280; }
+.photo-preview { width: 100%; border-radius: 10px; margin-bottom: 10px; display: none; max-height: 180px; object-fit: cover; }
+.photo-preview.show { display: block; }
+#photoInput { display: none; }
+.ocr-progress { background: #f0f4fb; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: none; }
+.ocr-progress.show { display: block; }
+.ocr-bar-track { height: 6px; background: #e2e8f0; border-radius: 99px; margin-top: 8px; }
+.ocr-bar-fill  { height: 100%; background: #2563C8; border-radius: 99px; transition: width 0.3s; }
+.divider  { height: 1px; background: #e2e8f0; margin: 0 18px 16px; }
+.btn-wrap { padding: 0 18px 20px; display: flex; flex-direction: column; gap: 8px; }
+.main-btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; background: #2563C8; color: #fff; transition: background 0.15s; }
+.main-btn:disabled { background: #e2e8f0; color: #9ca3af; cursor: not-allowed; }
+.main-btn.green  { background: #16a34a; }
+.main-btn.purple { background: #7c3aed; }
+.eval-wrap { padding: 20px 18px 24px; }
+.score-circle { width: 90px; height: 90px; border-radius: 50%; background: #2563C8; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 12px; }
+.score-num   { font-size: 28px; font-weight: 800; line-height: 1; }
+.score-label { font-size: 10px; opacity: 0.85; letter-spacing: 1px; }
+.eval-msg  { font-size: 14px; color: #1a1a2e; text-align: center; line-height: 1.6; margin-bottom: 16px; }
+.ironic-box { background: #fffbeb; border: 1.5px solid #f59e0b; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; font-size: 13px; color: #92400e; line-height: 1.6; text-align: center; font-style: italic; }
+.eval-section { margin-bottom: 18px; }
+.eval-title { font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #6b7280; margin-bottom: 10px; }
+.trans-word { display: flex; gap: 8px; align-items: center; padding: 7px 12px; border-radius: 8px; background: #f8faff; margin-bottom: 5px; }
+.trans-en  { font-family: Georgia, serif; font-weight: 700; color: #1a1a2e; font-size: 14px; flex: 1; }
+.trans-arr { color: #2563C8; font-size: 12px; }
+.trans-pt  { font-size: 13px; color: #6b7280; flex: 1; }
+.trans-sent { padding: 10px 12px; border-radius: 10px; background: #f8faff; margin-bottom: 8px; }
+.trans-sent-en { font-family: Georgia, serif; font-size: 14px; color: #1a1a2e; margin-bottom: 4px; }
+.trans-sent-pt { font-size: 13px; color: #2563C8; }
+
+.teacher-test-bar{display:none;margin:10px 16px 0;background:#fffbeb;border:1.5px solid #f59e0b;color:#92400e;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:800;line-height:1.4}
+.teacher-test-bar.show{display:block}
+.teacher-tools{display:none;margin:10px 16px 0;background:rgba(255,255,255,0.14);border-radius:12px;padding:10px;gap:8px;flex-wrap:wrap}
+.teacher-tools.show{display:flex}
+.teacher-tools button{flex:1 1 130px;border:none;border-radius:10px;padding:10px 8px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;background:#fff;color:#1a1a2e}
+.teacher-tools button.danger{background:#dc2626;color:#fff}
+</style>
+</head>
+  
+<body>
+
+<div class="header">
+  <button class="back-btn" onclick="goBack()">&#8249;</button>
+  <div class="h-info">
+    <div class="h-sub" id="hSub">Loading...</div>
+    <div class="h-title" id="hTitle">Loading...</div>
+  </div>
+  <div class="h-step" id="hStep">1 / 4</div>
+</div>
+
+<div class="prog-wrap">
+  <div class="prog-track">
+    <div class="prog-fill" id="pFill" style="width:0%"></div>
+  </div>
+</div>
+
+
+
+<div class="teacher-test-bar" id="teacherTestBar">🧪 Teacher Test Mode — no student progress will be saved.</div>
+<div class="teacher-tools" id="teacherTools">
+  <button onclick="teacherGoWords()">Words</button>
+  <button onclick="teacherGoHandwriting()">Handwriting</button>
+  <button onclick="teacherGoSentences()">Sentences</button>
+  <button onclick="teacherGoEvaluation()">Evaluation</button>
+  <button class="danger" onclick="finishTeacherTest()">Finish test</button>
+</div>
+<div class="card" id="card">
+  <div style="padding:48px 24px;text-align:center">
+    <div style="width:36px;height:36px;border:4px solid #e2e8f0;border-top-color:#2563C8;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px"></div>
+    <div style="font-size:14px;color:#6b7280">Loading your lesson...</div>
+  </div>
+</div>
+
+<input type="file" id="photoInput" accept="image/*" capture="environment">
+
+<script>
+var SUPABASE_URL  = "https://kqggtikhgzvzreiraosi.supabase.co";
+var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtxZ2d0aWtoZ3p2enJlaXJhb3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1MTE2ODEsImV4cCI6MjA5ODA4NzY4MX0.K7yVSDxf-uerPJeVjO4huJdEqVmR2Ty3jy1jyYMKk58";
+var IS_TEACHER_TEST = new URLSearchParams(window.location.search).get("teacher_test") === "1";
+var FN_EVALUATE   = SUPABASE_URL + "/functions/v1/evaluate-pronunciation";
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+var currentUser  = null;
+var lesson       = null;
+var phase        = "words";
+var wordsDone    = {};
+var sentsDone    = {};
+var hwApproved   = false;
+var ocrText      = "";
+var selectedIdx  = null;
+var recognition  = null;
+var wordsCorrect = 0;
+var sentsCorrect = 0;
+var currentSessionId = null;
+var sentAudioUnlocked = {};
+var hwAttempts = 0;
+var hwManualOverride = false;
+var DAILY_LESSON_LIMIT = 3;
+var finalEvaluationInFlight = false;
+
+var SESSION_KEY = "bento_session";
+
+function getSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+
+function sessionPayload(status) {
+  return {
+    student_id: currentUser ? currentUser.id : null,
+    lesson_id: lesson ? lesson.id : null,
+    status: status || "in_progress",
+    phase: phase,
+    words_done: wordsDone || {},
+    sents_done: sentsDone || {},
+    hw_approved: !!hwApproved,
+    ocr_text: ocrText || "",
+    selected_idx: selectedIdx,
+    words_correct: wordsCorrect || 0,
+    sents_correct: sentsCorrect || 0,
+    updated_at: new Date().toISOString()
+  };
+}
+
+async function saveSession() {
+  if (IS_TEACHER_TEST) return;
+  if (!lesson || !currentUser) return;
+
+  var localPayload = {
+    sessionId: currentSessionId,
+    lessonId: lesson.id,
+    phase: phase,
+    wordsDone: wordsDone,
+    sentsDone: sentsDone,
+    hwApproved: hwApproved,
+    ocrText: ocrText,
+    selectedIdx: selectedIdx,
+    wordsCorrect: wordsCorrect,
+    sentsCorrect: sentsCorrect,
+    sentAudioUnlocked: sentAudioUnlocked,
+    hwAttempts: hwAttempts,
+    hwManualOverride: hwManualOverride
+  };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(localPayload));
+
+  if (!currentSessionId) return;
+  await sb.from("lesson_sessions")
+    .update(sessionPayload("in_progress"))
+    .eq("id", currentSessionId)
+    .eq("student_id", currentUser.id);
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+  currentSessionId = null;
+}
+
+function applySessionState(sess) {
+  if (!sess) return;
+  currentSessionId = sess.id || sess.sessionId || currentSessionId;
+  phase        = sess.phase || "words";
+  wordsDone    = sess.words_done || sess.wordsDone || {};
+  sentsDone    = sess.sents_done || sess.sentsDone || {};
+  hwApproved   = !!(sess.hw_approved || sess.hwApproved);
+  ocrText      = sess.ocr_text || sess.ocrText || "";
+  selectedIdx  = (sess.selected_idx !== undefined && sess.selected_idx !== null) ? sess.selected_idx : (sess.selectedIdx || null);
+  wordsCorrect = sess.words_correct || sess.wordsCorrect || 0;
+  sentsCorrect = sess.sents_correct || sess.sentsCorrect || 0;
+  sentAudioUnlocked = sess.sentAudioUnlocked || {};
+  hwAttempts = Number(sess.hwAttempts || 0);
+  hwManualOverride = !!sess.hwManualOverride;
+}
+
+async function getActiveDbSession() {
+  var r = await sb.from("lesson_sessions")
+    .select("*")
+    .eq("student_id", currentUser.id)
+    .eq("status", "in_progress")
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  if (r.error) return { error: r.error, data: null };
+  return { error: null, data: (r.data && r.data.length > 0) ? r.data[0] : null };
+}
+
+async function createDbSession(lessonId) {
+  var r = await sb.from("lesson_sessions")
+    .insert({
+      student_id: currentUser.id,
+      lesson_id: lessonId,
+      status: "in_progress",
+      phase: "words",
+      words_done: {},
+      sents_done: {},
+      hw_approved: false,
+      ocr_text: "",
+      selected_idx: null,
+      words_correct: 0,
+      sents_correct: 0
+    })
+    .select("id")
+    .single();
+
+  if (!r.error && r.data) currentSessionId = r.data.id;
+  return r;
+}
+
+function abandonButtonHtml() {
+  return '<button class="main-btn" style="background:#991b1b;margin-top:8px" onclick="abandonLesson()">Desistir da lição</button>';
+}
+
+async function abandonLesson() {
+  var ok = confirm("Deseja desistir desta lição? O professor verá essa desistência no painel.");
+  if (!ok) return;
+
+  if (currentSessionId) {
+    await sb.from("lesson_sessions")
+      .update({
+        status: "abandoned",
+        abandoned_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        phase: phase,
+        words_done: wordsDone || {},
+        sents_done: sentsDone || {},
+        hw_approved: !!hwApproved,
+        ocr_text: ocrText || "",
+        selected_idx: selectedIdx,
+        words_correct: wordsCorrect || 0,
+        sents_correct: sentsCorrect || 0
+      })
+      .eq("id", currentSessionId)
+      .eq("student_id", currentUser.id);
+  }
+
+  clearSession();
+  window.location.href = "index.html";
+}
+
+
+function setupTeacherTestMode(){
+  if(!IS_TEACHER_TEST)return;
+  var bar=document.getElementById("teacherTestBar");
+  var tools=document.getElementById("teacherTools");
+  if(bar)bar.className="teacher-test-bar show";
+  if(tools)tools.className="teacher-tools show";
+}
+function teacherMarkWordsDone(){
+  wordsDone={};
+  if(lesson&&lesson.words){for(var i=0;i<lesson.words.length;i++)wordsDone[i]=true;}
+}
+function teacherMarkSentencesDone(){
+  sentsDone={};
+  if(lesson&&lesson.sentences){for(var i=0;i<lesson.sentences.length;i++)sentsDone[i]=true;}
+}
+function teacherGoWords(){
+  if(!IS_TEACHER_TEST||!lesson)return;
+  phase="words";selectedIdx=null;renderWords();
+}
+function teacherGoHandwriting(){
+  if(!IS_TEACHER_TEST||!lesson)return;
+  teacherMarkWordsDone();phase="handwriting";hwApproved=false;renderHandwriting();
+}
+function teacherGoSentences(){
+  if(!IS_TEACHER_TEST||!lesson)return;
+  teacherMarkWordsDone();hwApproved=true;phase="sentences";renderSentences();
+}
+function teacherGoEvaluation(){
+  if(!IS_TEACHER_TEST||!lesson)return;
+  teacherMarkWordsDone();teacherMarkSentencesDone();hwApproved=true;
+  wordsCorrect=lesson.words?lesson.words.length:0;
+  sentsCorrect=lesson.sentences?lesson.sentences.length:0;
+  phase="evaluation";goEvaluation();
+}
+function finishTeacherTest(){
+  clearSession();
+  window.location.href="professor.html";
+}
+
+async function init() {
+  var r = await sb.auth.getSession();
+  if (!r.data.session) { window.location.href = "login.html"; return; }
+  currentUser = r.data.session.user;
+  setupTeacherTestMode();
+  await loadLesson();
+}
+
+
+function getTodayStartISO() {
+  var d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+async function getTodayCompletedCount() {
+  var today = getTodayStartISO();
+  var r = await sb.from("lesson_results")
+    .select("id", { count: "exact", head: true })
+    .eq("student_id", currentUser.id)
+    .gte("completed_at", today);
+  if (r.error) return { count: 0, error: r.error };
+  return { count: r.count || 0, error: null };
+}
+
+function showDailyLimitReached() {
+  document.getElementById("hSub").textContent = "Daily study completed";
+  document.getElementById("hTitle").textContent = "Bento Lab";
+  document.getElementById("hStep").textContent = "3 / 3";
+  document.getElementById("pFill").style.width = "100%";
+  document.getElementById("card").innerHTML =
+    '<div style="padding:32px 22px;text-align:center">' +
+    '<div style="font-size:36px;margin-bottom:10px">🧪</div>' +
+    '<div style="font-size:20px;font-weight:800;color:#1a1a2e;margin-bottom:8px">Daily lessons completed</div>' +
+    '<div style="font-size:14px;color:#6b7280;line-height:1.6;margin-bottom:18px">' +
+    'You completed your 3 lessons for today. New lessons will be available tomorrow. For now, continue practicing in the Bento Lab.' +
+    '</div>' +
+    "<button class=\"main-btn green\" onclick=\"window.location.href='games.html'\">Open Bento Lab</button>" +
+    '<button class="main-btn" style="margin-top:8px;background:#64748b" onclick="goBack()">Back to Dashboard</button>' +
+    '</div>';
+}
+
+
+async function loadLesson() {
+  try {
+    var localSess = getSession();
+
+    document.getElementById("card").innerHTML =
+      '<div style="padding:32px;text-align:center;color:#6b7280">Buscando lições no Supabase...</div>';
+
+    var active = await getActiveDbSession();
+    if (active.error) {
+      document.getElementById("card").innerHTML =
+        '<div style="padding:32px;text-align:center;color:#991b1b">Erro ao buscar sessão ativa:<br><br>' +
+        active.error.message +
+        '</div>';
+      return;
+    }
+
+    var lessonIdToLoad = null;
+    var activeSession = active.data;
+
+    if (activeSession && activeSession.lesson_id) {
+      lessonIdToLoad = activeSession.lesson_id;
+      applySessionState(activeSession);
+    } else if (localSess.lessonId) {
+      lessonIdToLoad = localSess.lessonId;
+      applySessionState(localSess);
+    }
+
+    if (!lessonIdToLoad) {
+      var daily = await getTodayCompletedCount();
+      if (daily.error) {
+        document.getElementById("card").innerHTML =
+          '<div style="padding:32px;text-align:center;color:#991b1b">Error checking daily limit:<br><br>' +
+          daily.error.message +
+          '</div>';
+        return;
+      }
+      if (!IS_TEACHER_TEST && daily.count >= DAILY_LESSON_LIMIT) {
+        showDailyLimitReached();
+        return;
+      }
+    }
+
+    var lessonsQuery = sb.from("lessons").select("*");
+
+    if (lessonIdToLoad) {
+      lessonsQuery = lessonsQuery
+        .eq("id", lessonIdToLoad)
+        .limit(1);
+    } else {
+      lessonsQuery = lessonsQuery
+        .order("lesson_order", {
+          ascending: true,
+          nullsFirst: false
+        })
+        .order("unit_order", {
+          ascending: true,
+          nullsFirst: false
+        })
+        .limit(500);
+    }
+
+    var r = await lessonsQuery;
+
+    if (r.error) {
+      document.getElementById("card").innerHTML =
+        '<div style="padding:32px;text-align:center;color:#991b1b">Erro no Supabase:<br><br>' +
+        r.error.message +
+        '</div>';
+      return;
+    }
+
+    var lessons = r.data || [];
+
+    if (lessons.length === 0) {
+      document.getElementById("card").innerHTML =
+        '<div style="padding:32px;text-align:center;color:#991b1b">' +
+        'Nenhuma lição encontrada.<br><br>' +
+        'A tabela lessons está vazia, sem permissão de leitura, ou a sessão aponta para uma lição apagada.' +
+        '</div>';
+      return;
+    }
+
+    if (lessonIdToLoad) {
+      lesson = lessons[0];
+    } else {
+      var done = await sb.from("lesson_results")
+        .select("lesson_id")
+        .eq("student_id", currentUser.id);
+
+      if (done.error) {
+        document.getElementById("card").innerHTML =
+          '<div style="padding:32px;text-align:center;color:#991b1b">Erro ao buscar progresso:<br><br>' +
+          done.error.message +
+          '</div>';
+        return;
+      }
+
+      var doneIds = (done.data || []).map(function(r) {
+        return r.lesson_id;
+      });
+
+      /*
+        The database query is already ordered by lesson_order.
+        Therefore the first unfinished row is the next lesson
+        in the official Bento curriculum.
+      */
+      var remaining = lessons.filter(function(l) {
+        return doneIds.indexOf(l.id) === -1;
+      });
+
+      lesson = remaining.length > 0
+        ? remaining[0]
+        : lessons[0];
+
+      var created = await createDbSession(lesson.id);
+      if (created.error) {
+        document.getElementById("card").innerHTML =
+          '<div style="padding:32px;text-align:center;color:#991b1b">Erro ao criar sessão da lição:<br><br>' +
+          created.error.message +
+          '</div>';
+        return;
+      }
+    }
+
+    if (typeof lesson.words === "string") {
+      try { lesson.words = JSON.parse(lesson.words); } catch(e) { lesson.words = []; }
+    }
+    if (typeof lesson.sentences === "string") {
+      try { lesson.sentences = JSON.parse(lesson.sentences); } catch(e) { lesson.sentences = []; }
+    }
+    if (!Array.isArray(lesson.words)) lesson.words = [];
+    if (!Array.isArray(lesson.sentences)) lesson.sentences = [];
+
+    if (lesson.words.length === 0 || lesson.sentences.length === 0) {
+      document.getElementById("card").innerHTML =
+        '<div style="padding:32px;text-align:center;color:#991b1b">' +
+        'A lição foi encontrada, mas está sem words ou sentences.' +
+        '</div>';
+      return;
+    }
+
+    await saveSession();
+
+    document.getElementById("hSub").textContent = lesson.group_name || "Bento Class";
+    document.getElementById("hTitle").textContent = lesson.pattern || lesson.subgroup || "Lesson";
+
+    if      (phase === "handwriting") renderHandwriting();
+    else if (phase === "sentences")   renderSentences();
+    else if (phase === "evaluation")  goEvaluation();
+    else                              renderWords();
+
+  } catch (e) {
+    document.getElementById("card").innerHTML =
+      '<div style="padding:32px;text-align:center;color:#991b1b">' +
+      'Erro inesperado:<br><br>' + e.message +
+      '</div>';
+  }
+}
+
+// ── PROGRESS ────────────────────────────────────────────
+function updateProgress() {
+  var pcts = { words: 0, handwriting: 25, sentences: 50, evaluation: 100 };
+  var base = pcts[phase] || 0;
+  var extra = 0;
+  if (phase === "words")
+    extra = Math.round(Object.keys(wordsDone).length / lesson.words.length * 25);
+  else if (phase === "sentences")
+    extra = Math.round(Object.keys(sentsDone).length / lesson.sentences.length * 25);
+  document.getElementById("pFill").style.width = (base + extra) + "%";
+}
+
+// ── DICTIONARY API ──────────────────────────────────────
+async function defineWord(word, idx) {
+  var box = document.getElementById("def" + idx);
+  if (!box) return;
+  if (box.classList.contains("show")) { box.className = "def-box"; return; }
+  box.className = "def-box show";
+  box.innerHTML = '<div style="font-size:12px;color:#6b7280">Loading definition...</div>';
+  try {
+    var res = await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + word);
+    if (!res.ok) throw new Error("not found");
+    var data = await res.json();
+    var entry   = data[0];
+
+    // IPA phonetic
+    var phonetic = "";
+    if (entry.phonetic) {
+      phonetic = entry.phonetic;
+    } else if (entry.phonetics && entry.phonetics.length > 0) {
+      for (var p = 0; p < entry.phonetics.length; p++) {
+        if (entry.phonetics[p].text) { phonetic = entry.phonetics[p].text; break; }
+      }
+    }
+
+    // Audio
+    var audioUrl = "";
+    if (entry.phonetics) {
+      for (var a = 0; a < entry.phonetics.length; a++) {
+        if (entry.phonetics[a].audio) { audioUrl = entry.phonetics[a].audio; break; }
+      }
+    }
+
+    // Definition
+    var meaning = entry.meanings[0];
+    var def     = meaning.definitions[0];
+    var pos     = meaning.partOfSpeech || "";
+    var text    = def.definition || "";
+    var example = def.example ? '"' + def.example + '"' : "";
+
+    var html = '<div class="def-word">' + word + '</div>';
+
+    // IPA only. Definition is read automatically; Repeat Definition button appears below.
+    if (phonetic) {
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+      html += '<div class="def-ipa">' + phonetic + '</div>';
+      html += '</div>';
+    }
+
+    if (pos)     html += '<div class="def-pos">' + pos + '</div>';
+    if (text)    html += '<div class="def-text">' + text + '</div>';
+    if (example) html += '<div class="def-example">' + example + '</div>';
+
+    html += '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">';
+    if (text) html += '<button class="def-audio-btn" onclick="speakDefinition(' + JSON.stringify(text) + ')">🔊 Repeat definition</button>';
+    html += '</div>';
+
+    box.innerHTML = html;
+    if (text) speakDefinition(text);
+  } catch(e) {
+    box.innerHTML = '<div style="font-size:12px;color:#6b7280">No definition found for "' + word + '".</div>';
+  }
+}
+
+
+
+function speakDefinition(text) {
+  if (!text) return;
+  window.speechSynthesis.cancel();
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US";
+  u.rate = 0.88;
+  u.pitch = 1;
+  window.speechSynthesis.speak(u);
+}
+
+function playAudio(url) {
+  if (!url) return;
+  var audio = new Audio(url.startsWith("http") ? url : "https:" + url);
+  audio.play();
+}
+
+function speakEnglish(text, rate) {
+  if (!text || !("speechSynthesis" in window)) return;
+
+  try {
+    window.speechSynthesis.cancel();
+
+    var utterance = new SpeechSynthesisUtterance(String(text));
+    utterance.lang = "en-US";
+    utterance.rate = rate || 0.88;
+    utterance.pitch = 1;
+
+    window.speechSynthesis.speak(utterance);
+  } catch (error) {
+    console.warn("Speech synthesis failed:", error);
+  }
+}
+
+function saySentence(sentence) {
+  speakEnglish(sentence, 0.82);
+}
+
+function speakFeedback(text) {
+  speakEnglish(text, 0.9);
+}
+
+
+function getPronunciationScore(data, ok) {
+  if (!data) return ok ? 85 : 55;
+  var raw = data.score || data.accuracy || data.pronunciation_score || data.percent || data.percentage;
+  var n = Number(raw);
+  if (!isNaN(n) && n > 0) {
+    if (n <= 1) n = n * 100;
+    return Math.max(0, Math.min(100, Math.round(n)));
+  }
+  return ok ? 85 : 55;
+}
+
+function feedbackCardHtml(type, msg, data, ok) {
+  var score = getPronunciationScore(data, ok);
+  var label = ok ? "Pronunciation accepted" : "Needs adjustment";
+  var icon = ok ? "✅" : "⚠️";
+  var barColor = ok ? "#16a34a" : score >= 60 ? "#f59e0b" : "#dc2626";
+
+  return '' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">' +
+      '<div style="font-weight:900;font-size:13px">' + icon + ' ' + label + '</div>' +
+      '<div style="font-weight:900;font-size:18px">' + score + '%</div>' +
+    '</div>' +
+    '<div style="height:8px;background:rgba(15,23,42,0.12);border-radius:999px;overflow:hidden;margin-bottom:9px">' +
+      '<div style="height:100%;width:' + score + '%;background:' + barColor + ';border-radius:999px"></div>' +
+    '</div>' +
+    '<div style="font-size:13px;line-height:1.45">' + msg + '</div>';
+}
+
+function isPronunciationCorrect(data) {
+  if (!data) return false;
+
+  if (data.correct === true) return true;
+  if (data.is_correct === true) return true;
+  if (data.passed === true) return true;
+
+  var c = String(data.correct || data.is_correct || data.result || data.status || "").toLowerCase();
+  if (c === "true" || c === "correct" || c === "pass" || c === "passed" || c === "ok") return true;
+
+  var score = Number(data.score || data.accuracy || data.pronunciation_score || 0);
+  if (!isNaN(score) && score >= 75) return true;
+
+  return false;
+}
+
+
+function englishFeedback(data, fallback) {
+  var txt = data && (data.spoken_feedback || data.feedback);
+  return txt || fallback || "Try again.";
+}
+
+function closeDefinitionBoxes() {
+  document.querySelectorAll(".def-box.show").forEach(function(box) {
+    box.className = "def-box";
+  });
+}
+
+function getFeedbackText(data, fallback) {
+  return data.spoken_feedback || data.feedback || fallback || "Tente novamente.";
+}
+
+// ── TTS ─────────────────────────────────────────────────
+function sayWord(word) {
+  if (!word) return;
+  try {
+    window.speechSynthesis.cancel();
+
+    var u = new SpeechSynthesisUtterance(String(word));
+    u.lang = "en-US";
+    u.rate = 0.82;
+    u.pitch = 1;
+
+    window.speechSynthesis.speak(u);
+  } catch(e) {
+    alert("Audio is not available in this browser.");
+  }
+}
+function spellWord(word) {
+  if (!word) return;
+  try {
+    window.speechSynthesis.cancel();
+
+    var letters = String(word).split("");
+    var i = 0;
+
+    function speakNext() {
+      if (i >= letters.length) return;
+
+      var letter = letters[i];
+      var u = new SpeechSynthesisUtterance(letter);
+      u.lang = "en-US";
+      u.rate = 0.72;
+      u.pitch = 1;
+
+      u.onend = function() {
+        i++;
+        setTimeout(speakNext, 220);
+      };
+
+      window.speechSynthesis.speak(u);
+    }
+
+    speakNext();
+  } catch(e) {
+    alert("Spelling audio is not available in this browser.");
+  }
+}
+
+
+
+async function callBentoEdgeFunction(payload, timeoutMs) {
+  var controller = new AbortController();
+  var timeout = setTimeout(function() {
+    controller.abort();
+  }, timeoutMs || 20000);
+
+  try {
+    var sessionResult = await sb.auth.getSession();
+    var accessToken =
+      sessionResult &&
+      sessionResult.data &&
+      sessionResult.data.session
+        ? sessionResult.data.session.access_token
+        : null;
+
+    if (!accessToken) {
+      throw new Error("SESSION_EXPIRED");
+    }
+
+    var response = await fetch(FN_EVALUATE, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + accessToken,
+        "apikey": SUPABASE_ANON
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    var responseText = await response.text();
+    var data = {};
+
+    if (responseText) {
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(
+          "INVALID_EDGE_RESPONSE_" +
+          response.status
+        );
+      }
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        data.feedback ||
+        ("EDGE_FUNCTION_" + response.status)
+      );
+    }
+
+    return data;
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      throw new Error("EVALUATION_TIMEOUT");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+
+async function approveHandwritingBug() {
+  if (!lesson || !currentUser) return;
+
+  try {
+    await sb.from("bug_reports").insert({
+      student_id: currentUser.id,
+      lesson_id: lesson.id,
+      item_type: "handwriting",
+      item_index: null,
+      target_text: "Handwriting OCR failed",
+      report_note: ocrText || "OCR returned empty or unusable text",
+      created_at: new Date().toISOString()
+    });
+  } catch(e) {
+    console.warn("Could not save handwriting bug report:", e);
+  }
+
+  hwApproved = true;
+  showFeedback(0, "correct", feedbackCardHtml("correct", "Bug report sent. Handwriting was marked as completed so you can continue the lesson.", { score: 100 }, true), "hw");
+  speakFeedback("Bug report sent. You can continue the lesson.");
+  saveSession();
+  renderHandwriting();
+}
+
+
+async function reportPronunciationBug(idx, type) {
+  if (!lesson || !currentUser) return;
+
+  var isSentence = type === "sent";
+  var target = isSentence ? lesson.sentences[idx] : lesson.words[idx];
+
+  var note = prompt(
+    "Report this item as difficult or bugged?\\n\\n" +
+    target + "\\n\\n" +
+    "Optional note:"
+  );
+
+  if (note === null) return;
+
+  var payload = {
+    student_id: currentUser.id,
+    lesson_id: lesson.id,
+    item_type: isSentence ? "sentence" : "word",
+    item_index: idx,
+    target_text: target,
+    report_note: note || "",
+    created_at: new Date().toISOString()
+  };
+
+  try {
+    await sb.from("bug_reports").insert(payload);
+  } catch(e) {
+    console.warn("Bug report could not be saved:", e);
+  }
+
+  if (isSentence) {
+    sentsDone[idx] = true;
+    sentsCorrect++;
+    showFeedback(idx, "correct", feedbackCardHtml("correct", "Bug report sent. This sentence was marked as completed so you can continue the lesson.", { score: 100 }, true), "sent");
+    speakFeedback("Bug report sent. You can continue the lesson.");
+    saveSession();
+  } else {
+    wordsDone[idx] = true;
+    wordsCorrect++;
+    showFeedback(idx, "correct", feedbackCardHtml("correct", "Bug report sent. This word was marked as completed so you can continue the lesson.", { score: 100 }, true), "word");
+    speakFeedback("Bug report sent. You can continue the lesson.");
+    saveSession();
+  }
+}
+
+
+// ── RECORDING ───────────────────────────────────────────
+function recordItem(idx, btnEl, type) {
+  closeDefinitionBoxes();
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showFeedback(idx, "info", "Please use Chrome to record.", type); return; }
+  if (recognition) { recognition.stop(); return; }
+  btnEl.classList.add("recording"); btnEl.textContent = "Stop";
+  recognition = new SR();
+  recognition.lang = "en-US"; recognition.interimResults = false; recognition.maxAlternatives = 1;
+  var handled = false;
+  recognition.onresult = function(e) {
+    if (handled) return; handled = true;
+    var transcript = e.results[0][0].transcript.trim();
+    btnEl.classList.remove("recording"); btnEl.innerHTML = "Record";
+    recognition.stop(); recognition = null;
+    if (type === "word") evaluateWord(idx, transcript);
+    else evaluateSentence(idx, transcript);
+  };
+  recognition.onerror = function() {
+    if (handled) return; handled = true;
+    btnEl.classList.remove("recording"); btnEl.innerHTML = "Record";
+    recognition = null;
+    showFeedback(idx, "info", "Could not hear you. Try a quieter place.", type);
+  };
+  recognition.onend = function() { btnEl.classList.remove("recording"); btnEl.innerHTML = "Record"; recognition = null; };
+  recognition.start();
+}
+
+async function evaluateWord(idx, transcript) {
+  closeDefinitionBoxes();
+
+  var word = lesson.words[idx];
+
+  showFeedback(
+    idx,
+    "info",
+    "Evaluating pronunciation...",
+    "word"
+  );
+
+  try {
+    var data = await callBentoEdgeFunction({
+      mode: "pronunciation",
+      type: "word",
+      word: word,
+      target: word,
+      transcript: transcript,
+      student_native_language: "pt-BR",
+      feedback_language: "en-US"
+    }, 25000);
+
+    var ok = isPronunciationCorrect(data);
+    var spoken = englishFeedback(
+      data,
+      ok
+        ? "Very good. Your pronunciation was clear."
+        : "Almost. Adjust your pronunciation and try again."
+    );
+
+    if (ok) {
+      showFeedback(
+        idx,
+        "correct",
+        feedbackCardHtml(
+          "correct",
+          spoken,
+          data,
+          true
+        ),
+        "word"
+      );
+
+      wordsDone[idx] = true;
+      wordsCorrect++;
+      await saveSession();
+    } else {
+      showFeedback(
+        idx,
+        "wrong",
+        feedbackCardHtml(
+          "wrong",
+          spoken,
+          data,
+          false
+        ),
+        "word"
+      );
+    }
+
+    speakFeedback(spoken);
+  } catch (error) {
+    console.warn(
+      "Pronunciation evaluation failed:",
+      error
+    );
+
+    var detail =
+      error && error.message
+        ? " (" + error.message + ")"
+        : "";
+
+    var message =
+      error && error.message === "SESSION_EXPIRED"
+        ? "Your session expired. Please sign in again."
+        : "I couldn't evaluate your pronunciation right now. Please try again." + detail;
+
+    showFeedback(
+      idx,
+      "info",
+      message,
+      "word"
+    );
+
+    speakFeedback(
+      error && error.message === "SESSION_EXPIRED"
+        ? "Your session expired. Please sign in again."
+        : "I couldn't evaluate your pronunciation right now. Please try again."
+    );
+  }
+}
+
+function showFeedback(idx, type, msg, ctx) {
+  var el;
+  if (ctx === "hw") el = document.getElementById("hwFeedback");
+  else el = document.getElementById((ctx === "sent" ? "sfb" : "fb") + idx);
+  if (!el) return;
+  el.className = "feedback show " + type;
+  if (String(msg || "").indexOf("<") >= 0) el.innerHTML = msg;
+  else el.textContent = msg;
+}
+
+// ── PHASE 1: WORDS ──────────────────────────────────────
+function renderWords() {
+  phase = "words"; updateProgress();
+  document.getElementById("hStep").textContent = "1 / 4";
+  var count = Object.keys(wordsDone).length;
+  var allDone = count === lesson.words.length;
+  var html = '<div class="phase-label" style="color:#2563C8"><div class="phase-dot" style="background:#2563C8"></div> Phase 1 - Words</div>';
+  html += '<div class="section">';
+  html += '<div class="pattern-tag">' + (lesson.pattern || lesson.subgroup) + '</div>';
+  html += '<p class="instruction">Tap a word to listen, spell or record your pronunciation.</p>';
+  html += '<div class="word-list">';
+  for (var i = 0; i < lesson.words.length; i++) {
+    var w = lesson.words[i]; var done = wordsDone[i]; var sel = selectedIdx === i && !done;
+    var cls = done ? "done" : sel ? "selected" : "";
+    html += '<div class="word-item ' + cls + '" id="wi' + i + '">';
+    html += '<div class="word-row" onclick="selectWord(' + i + ')">';
+    html += '<span class="word-text">' + w + '</span>';
+    html += '<span class="word-icon">' + (done ? "✅" : sel ? "▾" : "○") + '</span>';
+    html += '</div>';
+    if (sel) {
+      html += '<div class="word-actions">';
+      html += '<div class="btn-row">';
+      html += '<button class="act-btn btn-say" onclick="sayWord(' + JSON.stringify(w).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + ')">🔊 Listen</button>';
+      html += '<button class="act-btn btn-spell" onclick="spellWord(' + JSON.stringify(w).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + ')">🔤 Spell</button>';
+      html += '</div>';
+      html += '<button class="act-btn btn-rec" id="rec' + i + '" onclick="recordItem(' + i + ', this, \'word\')">🎙 Record</button>';
+      html += '<button class="act-btn btn-def" onclick="defineWord(' + JSON.stringify(w).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + ', '+i+')">📖 Define</button>';
+      html += '<button class="act-btn btn-bug" onclick="reportPronunciationBug(' + i + ', \'word\')">🐞 Bug Report</button>';
+      html += '<div class="def-box" id="def' + i + '"></div>';
+      html += '<div class="feedback" id="fb' + i + '"></div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  html += '</div></div><div class="divider"></div>';
+  html += '<div class="btn-wrap"><button class="main-btn" onclick="goHandwriting()" ' + (allDone ? "" : "disabled") + '>Next: Handwriting &#8594;</button>' + abandonButtonHtml() + '</div>';
+  document.getElementById("card").innerHTML = html;
+}
+
+function selectWord(i) {
+  if (wordsDone[i]) return;
+  selectedIdx = selectedIdx === i ? null : i;
+  renderWords();
+  if (selectedIdx !== null) {
+    setTimeout(function() {
+      var el = document.getElementById("wi" + i);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+  }
+}
+
+// ── PHASE 2: HANDWRITING ────────────────────────────────
+function goHandwriting() {
+  if (Object.keys(wordsDone).length < lesson.words.length) return;
+  phase = "handwriting"; saveSession(); renderHandwriting();
+}
+
+function renderHandwriting() {
+  phase = "handwriting"; updateProgress();
+  document.getElementById("hStep").textContent = "2 / 4";
+  var html = '<div class="phase-label" style="color:#7c3aed"><div class="phase-dot" style="background:#7c3aed"></div> Phase 2 - Handwriting</div>';
+  html += '<div class="section">';
+  html += '<p class="instruction">Copy all sentences below by hand on paper. Then take a photo.</p>';
+  html += '<div class="hw-sentences">';
+  for (var i = 0; i < lesson.sentences.length; i++) {
+    html += '<div class="hw-sent"><span>' + (i+1) + '.</span>' + lesson.sentences[i] + '</div>';
+  }
+  html += '</div>';
+  if (hwApproved) {
+    html += '<div style="background:#dcfce7;border:1.5px solid #16a34a;border-radius:12px;padding:16px;text-align:center;margin-bottom:14px">';
+    html += '<div style="font-size:28px;margin-bottom:6px">✅</div>';
+    html += '<div style="font-weight:700;color:#166534;font-size:15px">Photo approved!</div>';
+    html += '<div style="font-size:12px;color:#6b7280;margin-top:4px">' + (hwManualOverride ? "Manual confirmation accepted. Keep on writing." : "You can move on to the sentences") + '</div>';
+    html += '</div>';
+  } else {
+    html += '<div class="photo-area" id="photoArea" onclick="openCamera()">';
+    html += '<div class="photo-icon">📷</div>';
+    html += '<div class="photo-label">Take a photo of your writing</div>';
+    html += '<div class="photo-sub">Use dark ink or pencil, good light, and keep the full page visible</div>';
+    html += '</div>';
+    html += '<img class="photo-preview" id="photoPreview">';
+    html += '<div class="ocr-progress" id="ocrProgress">';
+    html += '<div style="font-size:13px;color:#1e40af;font-weight:600" id="ocrStatus">Reading your handwriting...</div>';
+    html += '<div class="ocr-bar-track"><div class="ocr-bar-fill" id="ocrBar" style="width:0%"></div></div>';
+    html += '</div>';
+    html += '<div class="feedback" id="hwFeedback"></div>';
+
+  }
+  html += '</div><div class="divider"></div>';
+  html += '<div class="btn-wrap">';
+
+  html += '<button class="main-btn purple" onclick="goSentences()" ' + (hwApproved ? "" : "disabled") + '>Next: Read Aloud &#8594;</button>' + abandonButtonHtml() + '</div>';
+  document.getElementById("card").innerHTML = html;
+}
+
+function openCamera() { document.getElementById("photoInput").click(); }
+
+document.getElementById("photoInput").addEventListener("change", function(e) {
+  var file = e.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var dataUrl = ev.target.result;
+    var preview = document.getElementById("photoPreview");
+    if (preview) { preview.src = dataUrl; preview.className = "photo-preview show"; }
+    var area = document.getElementById("photoArea");
+    if (area) area.className = "photo-area has-photo";
+    runOCR(dataUrl);
+  };
+  reader.readAsDataURL(file);
+});
+
+
+function normalizeOCRText(text) {
+  return String(text || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function ocrWordSimilarity(a, b) {
+  a = normalizeOCRText(a); b = normalizeOCRText(b);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  var rows = b.length + 1, cols = a.length + 1, m = [];
+  for (var i = 0; i < rows; i++) { m[i] = []; m[i][0] = i; }
+  for (var j = 0; j < cols; j++) m[0][j] = j;
+  for (i = 1; i < rows; i++) {
+    for (j = 1; j < cols; j++) {
+      m[i][j] = b.charAt(i - 1) === a.charAt(j - 1)
+        ? m[i - 1][j - 1]
+        : Math.min(m[i - 1][j - 1] + 1, m[i][j - 1] + 1, m[i - 1][j] + 1);
+    }
+  }
+  return 1 - (m[b.length][a.length] / Math.max(a.length, b.length, 1));
+}
+
+function sentenceCoverage(expected, detected) {
+  var expWords = normalizeOCRText(expected).split(" ").filter(function(w){ return w.length > 2; });
+  var detWords = normalizeOCRText(detected).split(" ").filter(function(w){ return w.length > 1; });
+  if (!expWords.length || !detWords.length) return 0;
+  var found = 0;
+  expWords.forEach(function(w) {
+    if (detWords.some(function(dw){ return dw === w || ocrWordSimilarity(w, dw) >= 0.72; })) found++;
+  });
+  return found / expWords.length;
+}
+
+function escapeHtmlText(text) {
+  return String(text || "").replace(/[<>&]/g, function(c) {
+    return {"<":"&lt;", ">":"&gt;", "&":"&amp;"}[c];
+  });
+}
+
+
+function getOverallHandwritingCoverage() {
+  if (!lesson || !Array.isArray(lesson.sentences)) return 0;
+  return sentenceCoverage(lesson.sentences.join(" "), ocrText || "");
+}
+
+function handwritingRetryActionsHtml() {
+  if (hwAttempts < 2) return "";
+
+  return '' +
+    '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">' +
+      '<button class="act-btn btn-say" type="button" onclick="openCamera()" style="flex:1;min-width:140px">📷 Try another photo</button>' +
+      '<button class="act-btn btn-def" type="button" onclick="approveHandwritingManually()" style="flex:1;min-width:140px">✍ I wrote it. Keep on</button>' +
+    '</div>';
+}
+
+async function approveHandwritingManually() {
+  hwApproved = true;
+  hwManualOverride = true;
+
+  if (!ocrText) {
+    ocrText = "[manual_override]";
+  } else if (ocrText.indexOf("[manual_override]") !== 0) {
+    ocrText = "[manual_override]\n" + ocrText;
+  }
+
+  await saveSession();
+  renderHandwriting();
+  speakFeedback("Keep on writing. You can continue the lesson.");
+}
+
+
+function preprocessImageForOCR(dataUrl) {
+  return new Promise(function(resolve, reject) {
+    var img = new Image();
+
+    img.onload = function() {
+      try {
+        var maxWidth = 1800;
+        var scale = Math.min(2.2, maxWidth / Math.max(img.width, 1));
+        if (scale < 1) scale = 1;
+
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+
+        var ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var data = imageData.data;
+        var gray = [];
+        var sum = 0;
+
+        for (var i = 0; i < data.length; i += 4) {
+          var value = Math.round(
+            data[i] * 0.299 +
+            data[i + 1] * 0.587 +
+            data[i + 2] * 0.114
+          );
+          gray.push(value);
+          sum += value;
+        }
+
+        var average = sum / Math.max(gray.length, 1);
+        var threshold = Math.max(145, Math.min(205, average - 18));
+
+        for (var p = 0, px = 0; p < data.length; p += 4, px++) {
+          var value = (gray[px] - 128) * 1.75 + 128;
+          value = Math.max(0, Math.min(255, value));
+          var finalValue = value < threshold ? 0 : 255;
+
+          data[p] = finalValue;
+          data[p + 1] = finalValue;
+          data[p + 2] = finalValue;
+          data[p + 3] = 255;
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL("image/jpeg", 0.92));
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    img.onerror = function() {
+      reject(new Error("Could not load image."));
+    };
+
+    img.src = dataUrl;
+  });
+}
+
+async function runOCR(dataUrl) {
+  var prog = document.getElementById("ocrProgress");
+  var bar  = document.getElementById("ocrBar");
+  var status = document.getElementById("ocrStatus");
+  var fb   = document.getElementById("hwFeedback");
+
+  if (prog) prog.className = "ocr-progress show";
+  if (bar) bar.style.width = "0%";
+  if (status) status.textContent = "Improving image contrast...";
+
+  var processedImage = dataUrl;
+
+  try {
+    processedImage = await preprocessImageForOCR(dataUrl);
+    if (status) status.textContent = "Reading enhanced handwriting...";
+  } catch (preprocessError) {
+    console.warn("OCR preprocessing failed. Using original image.", preprocessError);
+    if (status) status.textContent = "Reading original image...";
+  }
+
+  Tesseract.recognize(processedImage, "eng", {
+    logger: function(m) {
+      if (m.status === "recognizing text" && bar) {
+        var pct = Math.round(m.progress * 100);
+        bar.style.width = pct + "%";
+        if (status) status.textContent = "Reading enhanced handwriting... " + pct + "%";
+      }
+    }
+  }).then(function(result) {
+    if (prog) prog.className = "ocr-progress";
+
+    ocrText = (result && result.data && result.data.text) ? result.data.text : "";
+
+    var total = lesson.sentences.length;
+    var acceptedCount = 0;
+
+    for (var i = 0; i < total; i++) {
+      var coverage = sentenceCoverage(lesson.sentences[i], ocrText);
+      if (coverage >= 0.28) acceptedCount++;
+    }
+
+    var pctFound = Math.round((acceptedCount / Math.max(total, 1)) * 100);
+    var overallCoverage = getOverallHandwritingCoverage();
+    var readableLength = normalizeOCRText(ocrText).length;
+
+    if (
+      acceptedCount >= Math.ceil(total * 0.6) ||
+      overallCoverage >= 0.55
+    ) {
+      hwApproved = true;
+      hwManualOverride = false;
+      saveSession();
+      renderHandwriting();
+      return;
+    }
+
+    if (
+      overallCoverage >= 0.35 &&
+      acceptedCount >= 1
+    ) {
+      hwApproved = true;
+      hwManualOverride = false;
+      saveSession();
+      renderHandwriting();
+      return;
+    }
+
+    hwAttempts++;
+
+    if (fb) {
+      fb.className = "feedback show wrong";
+
+      if (readableLength < 18) {
+        fb.innerHTML =
+          "<strong>I couldn't read your handwriting clearly.</strong><br>" +
+          "Use darker ink, better lighting, and include the full page." +
+          handwritingRetryActionsHtml();
+      } else if (overallCoverage < 0.15) {
+        fb.innerHTML =
+          "<strong>Your handwriting may be readable, but it doesn't match this lesson.</strong><br>" +
+          "Please copy the sentences shown above." +
+          handwritingRetryActionsHtml();
+      } else {
+        fb.innerHTML =
+          "<strong>I found part of your writing (" + pctFound + "% of the lesson).</strong><br>" +
+          "Try one clearer photo. After two honest attempts, you can continue manually." +
+          handwritingRetryActionsHtml();
+      }
+    }
+  }).catch(function(e) {
+    if (prog) prog.className = "ocr-progress";
+    hwAttempts++;
+
+    if (fb) {
+      fb.className = "feedback show wrong";
+      fb.innerHTML =
+        "<strong>I couldn't process this photo.</strong><br>" +
+        "Try again with better lighting and the full page visible." +
+        handwritingRetryActionsHtml();
+    }
+  });
+}
+
+
+// ── PHASE 3: SENTENCES ──────────────────────────────────
+function goSentences() {
+  if (!hwApproved) return;
+  phase = "sentences"; saveSession(); renderSentences();
+}
+
+function renderSentences() {
+  phase = "sentences"; updateProgress();
+  document.getElementById("hStep").textContent = "3 / 4";
+  var allDone = Object.keys(sentsDone).length === lesson.sentences.length;
+  var html = '<div class="phase-label" style="color:#dc2626"><div class="phase-dot" style="background:#dc2626"></div> Phase 3 - Read Aloud</div>';
+  html += '<div class="section">';
+  html += '<p class="instruction">Leia a frase em voz alta. O áudio correto só será liberado depois da primeira tentativa incorreta.</p>';
+  for (var i = 0; i < lesson.sentences.length; i++) {
+    var done = sentsDone[i];
+    html += '<div style="border-radius:12px;overflow:hidden;border:2px solid ' + (done ? "#16a34a" : "#e2e8f0") + ';margin-bottom:8px">';
+    html += '<div style="display:flex;gap:10px;align-items:flex-start;background:' + (done ? "#dcfce7" : "#f0f4fb") + ';padding:12px 14px">';
+    html += '<span style="font-size:12px;font-weight:700;color:' + (done ? "#16a34a" : "#2563C8") + ';min-width:20px;padding-top:2px">' + (i+1) + '.</span>';
+    html += '<span style="font-family:Georgia,serif;font-size:15px;line-height:1.6;color:#1a1a2e;flex:1">' + lesson.sentences[i] + '</span>';
+    html += '<span style="font-size:16px;opacity:' + (done ? "1" : "0") + '">✅</span>';
+    html += '</div>';
+    if (!done) {
+      html += '<div style="padding:10px 12px 12px;background:#f8faff">';
+      html += '<button class="act-btn btn-rec" id="srec' + i + '" onclick="recordItem(' + i + ', this, \'sent\')" style="width:100%">🎙 Record Sentence</button>';
+      html += '<button class="act-btn btn-bug" onclick="reportPronunciationBug(' + i + ', \'sent\')" style="width:100%;margin-top:8px">🐞 Bug Report</button>';
+      if (sentAudioUnlocked[i]) {
+        html += '<button class="act-btn btn-say" onclick="saySentence(' + JSON.stringify(lesson.sentences[i]).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + ')" style="width:100%;margin-top:8px">🔊 Ouvir frase correta</button>';
+      }
+      html += '<div class="feedback" id="sfb' + i + '"></div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  html += '</div><div class="divider"></div>';
+  html += '<div class="btn-wrap"><button class="main-btn green" onclick="goEvaluation()" ' + (allDone ? "" : "disabled") + '>See Final Evaluation &#8594;</button>' + abandonButtonHtml() + '</div>';
+  document.getElementById("card").innerHTML = html;
+}
+
+
+async function evaluateSentence(idx, transcript) {
+  closeDefinitionBoxes();
+
+  var sentence = lesson.sentences[idx];
+
+  showFeedback(
+    idx,
+    "info",
+    "Evaluating pronunciation...",
+    "sent"
+  );
+
+  try {
+    var data = await callBentoEdgeFunction({
+      mode: "pronunciation",
+      type: "sentence",
+      word: sentence,
+      target: sentence,
+      transcript: transcript,
+      student_native_language: "pt-BR",
+      feedback_language: "en-US"
+    }, 25000);
+
+    var ok = isPronunciationCorrect(data);
+    var spoken = englishFeedback(
+      data,
+      ok
+        ? "Very good. Your sentence was clear."
+        : "Almost. Listen to the correct sentence and try again."
+    );
+
+    if (ok) {
+      showFeedback(
+        idx,
+        "correct",
+        feedbackCardHtml(
+          "correct",
+          spoken,
+          data,
+          true
+        ),
+        "sent"
+      );
+
+      sentsDone[idx] = true;
+      sentsCorrect++;
+      delete sentAudioUnlocked[idx];
+
+      await saveSession();
+      speakFeedback(spoken);
+
+      setTimeout(function() {
+        renderSentences();
+      }, 900);
+    } else {
+      sentAudioUnlocked[idx] = true;
+
+      showFeedback(
+        idx,
+        "wrong",
+        feedbackCardHtml(
+          "wrong",
+          spoken,
+          data,
+          false
+        ),
+        "sent"
+      );
+
+      await saveSession();
+      speakFeedback(spoken);
+    }
+  } catch (error) {
+    console.warn(
+      "Sentence evaluation failed:",
+      error
+    );
+
+    sentAudioUnlocked[idx] = true;
+
+    var detail =
+      error && error.message
+        ? " (" + error.message + ")"
+        : "";
+
+    var message =
+      error && error.message === "SESSION_EXPIRED"
+        ? "Your session expired. Please sign in again."
+        : "I couldn't evaluate your pronunciation right now. Please try again." + detail;
+
+    showFeedback(
+      idx,
+      "info",
+      message,
+      "sent"
+    );
+
+    speakFeedback(
+      error && error.message === "SESSION_EXPIRED"
+        ? "Your session expired. Please sign in again."
+        : "I couldn't evaluate your pronunciation right now. Please try again."
+    );
+  }
+}
+
+// ── PHASE 4: EVALUATION ─────────────────────────────────
+function goEvaluation() {
+  if (!IS_TEACHER_TEST && Object.keys(sentsDone).length < lesson.sentences.length) return;
+  phase = "evaluation"; saveSession();
+  document.getElementById("hStep").textContent = "4 / 4";
+  document.getElementById("pFill").style.width = "90%";
+  document.getElementById("card").innerHTML = '<div style="padding:48px 24px;text-align:center"><div style="width:36px;height:36px;border:4px solid #e2e8f0;border-top-color:#2563C8;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px"></div><div style="font-size:14px;color:#6b7280">Generating your final evaluation...</div></div>';
+  fetchEvaluation();
+}
+
+async function fetchEvaluation() {
+  if (finalEvaluationInFlight) return;
+  finalEvaluationInFlight = true;
+
+  var score = Math.round(((wordsCorrect / Math.max(lesson.words.length,1)) * 0.5 + (sentsCorrect / Math.max(lesson.sentences.length,1)) * 0.5) * 100);
+  var fallbackData = {
+    evaluation: buildFinalCongratulation(score),
+    ironic: buildHandwritingIrony(),
+    score: score,
+    word_translations: getLessonWordTranslations(),
+    sentence_translations: getLessonSentenceTranslations()
+  };
+
+  try {
+    var apiData = IS_TEACHER_TEST ? fallbackData : await callBentoEdgeFunction({
+      mode: "evaluation",
+      words: (lesson.words || []).slice(0, 40),
+      sentences: (lesson.sentences || []).slice(0, 20),
+      score: score,
+      ocr_text: String(ocrText || "").substring(0, 500)
+    }, 30000);
+
+    var evalData = {
+      evaluation: apiData.evaluation || fallbackData.evaluation,
+      ironic: apiData.ironic || fallbackData.ironic,
+      score: score,
+      word_translations: apiData.word_translations && typeof apiData.word_translations === "object" ? apiData.word_translations : fallbackData.word_translations,
+      sentence_translations: Array.isArray(apiData.sentence_translations) ? apiData.sentence_translations : fallbackData.sentence_translations
+    };
+
+    await saveResult(score);
+    renderEvaluation(evalData);
+  } catch(e) {
+    console.warn("Anthropic final evaluation failed; using local fallback:", e);
+    await saveResult(score);
+    renderEvaluation(fallbackData);
+  } finally {
+    finalEvaluationInFlight = false;
+  }
+}
+
+function buildFinalCongratulation(score) {
+  if (score >= 90) return "Excellent work. Your reading and pronunciation were very consistent in this lesson.";
+  if (score >= 75) return "Very good. You completed the lesson with good accuracy and you are improving.";
+  if (score >= 60) return "Lesson completed. There are still a few points to improve, but you are on the right track.";
+  return "Lesson completed. Let's reinforce pronunciation and reading in the Bento Lab.";
+}
+
+function buildHandwritingIrony() {
+  var text = (ocrText || "").trim();
+  var weak = text.length < 40;
+  var optionsStrong = [
+    "Sua pronúncia está melhorando. Sua escrita virou caso de arqueologia.",
+    "Já vi médicos com caligrafias melhores.",
+    "Ainda não tenho algoritmo para entender sânscrito.",
+    "O OCR leu sua folha e pediu um café antes de continuar.",
+    "A escrita apareceu. A interpretação ainda está em análise no setor de manuscritos antigos."
+  ];
+  var optionsSoft = [
+    "A caligrafia passou. Não com louvor, mas passou.",
+    "Desta vez o OCR sobreviveu sem chamar reforços.",
+    "Sua escrita ficou legível o suficiente para evitar uma expedição arqueológica.",
+    "Boa. Ainda parece uma negociação entre você e a caneta, mas melhorou."
+  ];
+  var arr = weak ? optionsStrong : optionsSoft;
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function getLessonWordTranslations() {
+  if (lesson.word_translations) {
+    if (typeof lesson.word_translations === "string") {
+      try { return JSON.parse(lesson.word_translations); } catch(e) { return {}; }
+    }
+    return lesson.word_translations;
+  }
+  return {};
+}
+
+function getLessonSentenceTranslations() {
+  if (lesson.sentence_translations) {
+    if (typeof lesson.sentence_translations === "string") {
+      try { return JSON.parse(lesson.sentence_translations); } catch(e) { return []; }
+    }
+    return lesson.sentence_translations;
+  }
+  return [];
+}
+
+async function saveResult(score) {
+  if (IS_TEACHER_TEST) return;
+  await sb.from("lesson_results").insert({
+    student_id:    currentUser.id,
+    lesson_id:     lesson.id,
+    score:         score,
+    words_correct: wordsCorrect,
+    words_total:   lesson.words.length,
+    sents_correct: sentsCorrect,
+    sents_total:   lesson.sentences.length,
+    ocr_text:      ocrText.substring(0, 500)
+  });
+
+  if (currentSessionId) {
+    await sb.from("lesson_sessions")
+      .update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        phase: "evaluation",
+        words_done: wordsDone || {},
+        sents_done: sentsDone || {},
+        hw_approved: !!hwApproved,
+        ocr_text: ocrText || "",
+        selected_idx: selectedIdx,
+        words_correct: wordsCorrect || 0,
+        sents_correct: sentsCorrect || 0
+      })
+      .eq("id", currentSessionId)
+      .eq("student_id", currentUser.id);
+  }
+}
+
+function renderEvaluation(data) {
+  document.getElementById("pFill").style.width = "100%";
+  document.getElementById("hStep").textContent = "✓";
+  clearSession();
+  var html = '<div class="eval-wrap">';
+  html += '<div style="text-align:center;margin-bottom:20px">';
+  html += '<div class="score-circle"><div class="score-num">' + (data.score||0) + '</div><div class="score-label">SCORE</div></div>';
+  html += '<div class="eval-msg">' + data.evaluation + '</div>';
+  html += '</div>';
+  html += '<div class="ironic-box">✏️ ' + data.ironic + '</div>';
+  html += '<div class="eval-section"><div class="eval-title">Lesson Vocabulary</div>';
+  for (var i = 0; i < lesson.words.length; i++) {
+    var w = lesson.words[i];
+    var tr = data.word_translations ? (data.word_translations[w] || "...") : "...";
+    html += '<div class="trans-word"><span class="trans-en">' + w + '</span><span class="trans-arr">&#8594;</span><span class="trans-pt">' + tr + '</span></div>';
+  }
+  html += '</div>';
+  html += '<div class="eval-section"><div class="eval-title">Lesson Sentences</div>';
+  for (var j = 0; j < lesson.sentences.length; j++) {
+    var tr2 = data.sentence_translations[j] || "...";
+    html += '<div class="trans-sent"><div class="trans-sent-en">' + lesson.sentences[j] + '</div><div class="trans-sent-pt">&#8594; ' + tr2 + '</div></div>';
+  }
+  html += '</div>';
+  html += '<div class="btn-wrap"><button class="main-btn green" onclick="goBack()">Back to Dashboard</button><button class="main-btn purple" style="margin-top:0" onclick="nextLesson()">Next Lesson &#8594;</button></div>';
+  html += '</div>';
+  document.getElementById("card").innerHTML = html;
+}
+
+function nextLesson() {
+  wordsDone = {}; sentsDone = {}; hwApproved = false;
+  ocrText = ""; selectedIdx = null; phase = "words";
+  wordsCorrect = 0; sentsCorrect = 0; sentAudioUnlocked = {};
+  clearSession(); lesson = null; init();
+}
+function goBack() { window.location.href = IS_TEACHER_TEST ? "professor.html" : "index.html"; }
+
+init();
+</script>
+<script src="assets/context-dictionary.js?v=3"></script>
+</body>
+</html>
