@@ -889,6 +889,9 @@ async function evaluateSentence(idx, transcript) {
   var sentence = lesson.sentences[idx];
   showFeedback(idx, "info", "Evaluating pronunciation...", "sent");
   try {
+    var sessionResult = await sb.auth.getSession();
+    var accessToken =
+    sessionResult.data.session?.access_token || SUPABASE_ANON;
     var res = await fetch(FN_EVALUATE, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_ANON },
