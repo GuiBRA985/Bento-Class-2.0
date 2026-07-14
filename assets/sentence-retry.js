@@ -332,10 +332,33 @@
     try {
       var response = await fetch(FN_EVALUATE, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " +
-  ((await sb.auth.getSession()).data.session?.access_token || SUPABASE_ANON)
+        try {
+  var sessionResult = await sb.auth.getSession();
+
+  var accessToken =
+    sessionResult.data.session?.access_token;
+
+  if (!accessToken) {
+    throw new Error("SESSION_EXPIRED");
+  }
+
+  var response = await fetch(FN_EVALUATE, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + accessToken,
+      "apikey": SUPABASE_ANON
+    },
+    body: JSON.stringify({
+      mode: "pronunciation",
+      type: "sentence",
+      word: sentence,
+      target: sentence,
+      transcript: transcript,
+      student_native_language: "pt-BR",
+      feedback_language: "en-US"
+    })
+  });
         },
         body: JSON.stringify({
           mode: "pronunciation",
