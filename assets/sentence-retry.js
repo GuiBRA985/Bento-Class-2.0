@@ -334,7 +334,8 @@
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer " + SUPABASE_ANON
+          "Authorization": "Bearer " +
+  ((await sb.auth.getSession()).data.session?.access_token || SUPABASE_ANON)
         },
         body: JSON.stringify({
           mode: "pronunciation",
