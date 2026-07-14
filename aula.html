@@ -884,44 +884,120 @@ async function evaluateWord(idx, transcript) {
   }
 }
 
-async function evaluateSentence(idx, transcript) {
+async function evaluateWord(idx, transcript) {
   closeDefinitionBoxes();
-  var sentence = lesson.sentences[idx];
-  showFeedback(idx, "info", "Evaluating pronunciation...", "sent");
+
+  var word = lesson.words[idx];
+
+  showFeedback(
+    idx,
+    "info",
+    "Evaluating pronunciation...",
+    "word"
+  );
+
   try {
     var sessionResult = await sb.auth.getSession();
+
     var accessToken =
-    sessionResult.data.session?.access_token || SUPABASE_ANON;
-    var res = await fetch(FN_EVALUATE, {
+      sessionResult.data.session?.access_token;
+
+    if (!accessToken) {
+      throw new Error("SESSION_EXPIRED");
+    }
+
+    var response = await fetch(FN_EVALUATE, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Authorization": "Bearer " + accessToken },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + accessToken,
+        "apikey": SUPABASE_ANON
+      },
       body: JSON.stringify({
         mode: "pronunciation",
-        type: "sentence",
-        word: sentence,
-        target: sentence,
-        transcript: transcript,
-        student_native_language: "pt-BR",
-        feedback_language: "en-US"
+        word: word,
+        transcript: transcript
       })
     });
-    var data = await res.json();
-    var ok = isPronunciationCorrect(data);
-    var spoken = englishFeedback(data, ok ? "Very good. Your sentence was clear." : "Almost. Listen to the correct sentence and try again.");
-    if (ok) {
-      showFeedback(idx, "correct", feedbackCardHtml("correct", spoken, data, ok), "sent");
-      speakFeedback(spoken);
-      sentsDone[idx] = true; sentsCorrect++; saveSession();
-    } else {
-      sentAudioUnlocked[idx] = true;
-      showFeedback(idx, "wrong", feedbackCardHtml("wrong", spoken, data, ok), "sent");
-      speakFeedback(spoken);
-      saveSession();
+
+    var data = await response.json();
+
+    if (!response.ok) {
+      console.warn(
+        "Edge Function error:",
+        response.status,
+        data
+      );
+
+      throw new Error(
+        data.error ||
+        data.feedback ||
+        "EDGE_FUNCTION_FAILED"
+      );
     }
-  } catch(e) {
-    var msg = "I couldn't evaluate your pronunciation. Please try again.";
-    showFeedback(idx, "info", msg, "sent");
-    speakFeedback(msg);
+
+    var ok = isPronunciationCorrect(data);
+
+    var spoken = englishFeedback(
+      data,
+      ok
+        ? "Very good. Your pronunciation was clear."
+        : "Almost. Adjust your pronunciation and try again."
+    );
+
+    if (ok) {
+      showFeedback(
+        idx,
+        "correct",
+        feedbackCardHtml(
+          "correct",
+          spoken,
+          data,
+          true
+        ),
+        "word"
+      );
+
+      speakFeedback(spoken);
+
+      wordsDone[idx] = true;
+      wordsCorrect++;
+
+      await saveSession();
+    } else {
+      showFeedback(
+        idx,
+        "wrong",
+        feedbackCardHtml(
+          "wrong",
+          spoken,
+          data,
+          false
+        ),
+        "word"
+      );
+
+      speakFeedback(spoken);
+    }
+  } catch (error) {
+    console.warn(
+      "Pronunciation evaluation failed:",
+      error
+    );
+
+    var message =
+      error.message === "SESSION_EXPIRED"
+        ? "Your session expired. Please sign in again."
+        : "I couldn't evaluate your pronunciation right now. Please try again.";
+
+    showFeedback(
+      idx,
+      "info",
+      message,
+      "word"
+    );
+
+    speakFeedback(message);
   }
 }
 
