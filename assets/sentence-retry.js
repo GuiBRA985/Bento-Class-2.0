@@ -330,9 +330,6 @@
     );
 
     try {
-      var response = await fetch(FN_EVALUATE, {
-        method: "POST",
-        try {
   var sessionResult = await sb.auth.getSession();
 
   var accessToken =
@@ -359,17 +356,8 @@
       feedback_language: "en-US"
     })
   });
-        },
-        body: JSON.stringify({
-          mode: "pronunciation",
-          type: "sentence",
-          word: sentence,
-          target: sentence,
-          transcript: transcript,
-          student_native_language: "pt-BR",
-          feedback_language: "en-US"
-        })
-      });
+
+  var data = {};
 
       var data = {};
 
