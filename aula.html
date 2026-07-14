@@ -894,7 +894,7 @@ async function evaluateSentence(idx, transcript) {
     sessionResult.data.session?.access_token || SUPABASE_ANON;
     var res = await fetch(FN_EVALUATE, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + SUPABASE_ANON },
+      headers: { "Content-Type": "application/json", "Authorization": "Authorization": "Bearer " + accessToken },
       body: JSON.stringify({
         mode: "pronunciation",
         type: "sentence",
